@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Chess Champs">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2350"/>
+      <stop offset="1" stop-color="#0f1226"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe082"/>
+      <stop offset="1" stop-color="#ffc93c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- crown -->
+  <path d="M116 360 L116 196 L196 260 L256 150 L316 260 L396 196 L396 360 Z"
+        fill="url(#gold)" stroke="#14172e" stroke-width="14" stroke-linejoin="round"/>
+  <rect x="116" y="360" width="280" height="40" rx="12" fill="url(#gold)" stroke="#14172e" stroke-width="14"/>
+  <circle cx="196" cy="240" r="14" fill="#14172e"/>
+  <circle cx="256" cy="200" r="14" fill="#14172e"/>
+  <circle cx="316" cy="240" r="14" fill="#14172e"/>
+</svg>
