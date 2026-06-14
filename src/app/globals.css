@@ -147,6 +147,24 @@ body {
   align-items: center;
   gap: 6px;
 }
+.rank-chip {
+  border: 1.5px solid currentColor;
+  font-size: 12px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+.rank-badge-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid currentColor;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 8px;
+  background: rgba(0,0,0,0.2);
+}
 .thinking-dot {
   width: 9px;
   height: 9px;

@@ -18,11 +18,13 @@ import {
   loadProgress,
   markChapterMastered,
   markPrimerSeen,
+  recordGameResult,
   starsFor,
   unlockChapter,
   DEFAULT_PROGRESS,
   type Progress,
 } from '@/persistence/progress';
+import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { speak } from '@/lib/speech';
 
@@ -54,8 +56,7 @@ export default function PlayPage() {
 
   const stars = starsFor(progress, chapter.id);
 
-  // Resume at the player's level + decide whether the chapter primer must gate
-  // entry (shown once per chapter, until its primer has been seen).
+  // Resume at the player's level + decide whether the chapter primer must gate entry.
   useEffect(() => {
     void loadProgress().then((p) => {
       setProgress(p);
@@ -69,12 +70,13 @@ export default function PlayPage() {
   const begin = useCallback(() => {
     handledGameOver.current = false;
     lastSeq.current = 0;
-    startGame({ playerColor: level.playerColor, band: level.botBand });
+    // Use the auto-calibrated band so difficulty adapts to the son's skill.
+    startGame({ playerColor: level.playerColor, band: progress.botBand });
     setPhase('playing');
     setHintsLeft(3);
     setHint(null);
     setRecap(null);
-  }, [level, startGame]);
+  }, [level, startGame, progress.botBand]);
 
   // Award a star whenever the player lands this chapter's tactic.
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function PlayPage() {
     void addStar(chapter.id, chapter.starGoal).then(setProgress);
   }, [eventSeq, events, phase, chapter]);
 
-  // Detect end of game, persist XP/champ power, and build the recap.
+  // Detect end of game, persist XP/champ power, record result for auto-calibration.
   useEffect(() => {
     if (phase !== 'playing' || handledGameOver.current) return;
     if (status !== 'checkmate' && status !== 'stalemate' && status !== 'draw') return;
@@ -98,7 +100,12 @@ export default function PlayPage() {
     const xp = result === 'win' ? 100 : result === 'draw' ? 40 : 25;
     const championId = result === 'win' ? 'queen' : undefined;
 
-    void completeLevel(level.id, xp, championId).then((p) => {
+    const gameResult = result === 'lose' ? 'loss' : result;
+
+    void Promise.all([
+      completeLevel(level.id, xp, championId),
+      recordGameResult(gameResult),
+    ]).then(([p]) => {
       setProgress(p);
       const ch = chapterForLevel(level.id);
       let chapterMastered = false;
@@ -130,11 +137,12 @@ export default function PlayPage() {
     window.setTimeout(() => setHint(null), 5000);
   };
 
-  // Primer "Start!" from the gate: mark seen, then drop into the lesson.
   const onPrimerGateDone = () => {
     void markPrimerSeen(chapter.id).then(setProgress);
     setPhase('lesson');
   };
+
+  const rank = getRank(progress.xp, progress.chaptersMastered);
 
   return (
     <>
@@ -147,6 +155,9 @@ export default function PlayPage() {
         stars={stars}
         chapterXp={progress.xp}
         onInfo={() => setInfoOpen(true)}
+        rankDisplay={rank.displayName}
+        rankColor={rank.tier.color}
+        rankBadge={rank.tier.badge}
       />
 
       <div className="center-col">

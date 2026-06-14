@@ -1,39 +1,251 @@
 /**
- * Campaign levels. Phase 1 ships Level 1 end-to-end; Phase 2 fills in the full
- * 30-level, 7-chapter curriculum from the design doc (starting with the
- * "Safety & Sight" anti-blunder chapter — the #1 strength lever at this level).
+ * Campaign levels — 20 levels across 5 chapters for Phase 2.
+ * Phase 3 fills the remaining 10 to reach the full 30-level curriculum.
  */
 import type { Band } from '@/engine/difficulty';
 import type { Color } from 'chess.js';
 
 export interface Level {
   id: number;
-  /** Chapter this level belongs to (see chapters.ts). */
   chapterId: number;
   chapter: string;
   title: string;
-  /** Champ id who mentors this level. */
   mentor: string;
-  /** One short line, kid-voice. */
   intro: string;
   goalText: string;
   botBand: Band;
   playerColor: Color;
-  /** Optional custom starting position; defaults to the normal start. */
   startFen?: string;
 }
 
 export const LEVELS: Level[] = [
+  // ── Chapter 1: Safety & Sight ──────────────────────────────────────────
   {
     id: 1,
     chapterId: 1,
     chapter: 'Chapter 1 · Safety & Sight',
     title: 'First Battle',
     mentor: 'pawn',
-    intro:
-      "Grab any piece your foe leaves undefended — that's free treasure! And keep YOUR pieces safe.",
+    intro: "Grab any piece your foe leaves undefended — that's free treasure! Keep YOUR pieces safe.",
     goalText: 'Win the battle by capturing safely.',
     botBand: 'rookie',
+    playerColor: 'w',
+  },
+  {
+    id: 2,
+    chapterId: 1,
+    chapter: 'Chapter 1 · Safety & Sight',
+    title: 'Hold Your Ground',
+    mentor: 'pawn',
+    intro: "Playing as Black now! Same rules — grab the free pieces and protect yours.",
+    goalText: 'Win playing as Black.',
+    botBand: 'rookie',
+    playerColor: 'b',
+  },
+  {
+    id: 3,
+    chapterId: 1,
+    chapter: 'Chapter 1 · Safety & Sight',
+    title: 'Sharper Eyes',
+    mentor: 'pawn',
+    intro: "The bot is a little smarter. Look twice before every move — is that square safe?",
+    goalText: 'Win without leaving any pieces undefended.',
+    botBand: 'easy',
+    playerColor: 'w',
+  },
+  {
+    id: 4,
+    chapterId: 1,
+    chapter: 'Chapter 1 · Safety & Sight',
+    title: 'Double Check',
+    mentor: 'pawn',
+    intro: "Trickier opponent. Ask: who is protecting that piece before you grab it.",
+    goalText: 'Win with smart, safe captures.',
+    botBand: 'easy',
+    playerColor: 'b',
+  },
+
+  // ── Chapter 2: Checkmate Basics ────────────────────────────────────────
+  {
+    id: 5,
+    chapterId: 2,
+    chapter: 'Chapter 2 · Checkmate Basics',
+    title: 'The Final Move',
+    mentor: 'queen',
+    intro: "Winning is cool. Checkmate is AMAZING. The king has nowhere to run — game over!",
+    goalText: 'Deliver checkmate to win.',
+    botBand: 'easy',
+    playerColor: 'w',
+  },
+  {
+    id: 6,
+    chapterId: 2,
+    chapter: 'Chapter 2 · Checkmate Basics',
+    title: 'Hunt the King',
+    mentor: 'queen',
+    intro: "Chase the enemy king to the edge of the board. Cornered kings get mated!",
+    goalText: 'Checkmate the enemy king.',
+    botBand: 'easy',
+    playerColor: 'b',
+  },
+  {
+    id: 7,
+    chapterId: 2,
+    chapter: 'Chapter 2 · Checkmate Basics',
+    title: 'Closing In',
+    mentor: 'queen',
+    intro: "Tougher opponent, same mission. Keep the pressure on and find that mate!",
+    goalText: 'Checkmate with Queen and King working together.',
+    botBand: 'medium',
+    playerColor: 'w',
+  },
+  {
+    id: 8,
+    chapterId: 2,
+    chapter: 'Chapter 2 · Checkmate Basics',
+    title: 'King Hunter',
+    mentor: 'queen',
+    intro: "The bot won't make it easy. Corner the king step by step — you've got this!",
+    goalText: 'Win by checkmate.',
+    botBand: 'medium',
+    playerColor: 'b',
+  },
+
+  // ── Chapter 3: Opening Principles ─────────────────────────────────────
+  {
+    id: 9,
+    chapterId: 3,
+    chapter: 'Chapter 3 · Opening Principles',
+    title: 'Control the Center',
+    mentor: 'pawn',
+    intro: "Move pawns to the center first. The player who controls the middle controls the game!",
+    goalText: 'Win by controlling the center and developing your pieces.',
+    botBand: 'easy',
+    playerColor: 'w',
+  },
+  {
+    id: 10,
+    chapterId: 3,
+    chapter: 'Chapter 3 · Opening Principles',
+    title: 'Develop First',
+    mentor: 'pawn',
+    intro: "Bring your knights and bishops out early. Don't move the same piece twice in a row!",
+    goalText: 'Win with all your pieces developed.',
+    botBand: 'easy',
+    playerColor: 'b',
+  },
+  {
+    id: 11,
+    chapterId: 3,
+    chapter: 'Chapter 3 · Opening Principles',
+    title: 'Castle Up',
+    mentor: 'pawn',
+    intro: "Castle early to keep your king safe. Uncastled kings get attacked fast!",
+    goalText: 'Castle within the first 10 moves and win.',
+    botBand: 'medium',
+    playerColor: 'w',
+  },
+  {
+    id: 12,
+    chapterId: 3,
+    chapter: 'Chapter 3 · Opening Principles',
+    title: 'Race to Safety',
+    mentor: 'pawn',
+    intro: "Same plan as Black: develop fast, castle early, then attack!",
+    goalText: 'Win with smart opening play.',
+    botBand: 'medium',
+    playerColor: 'b',
+  },
+
+  // ── Chapter 4: Fork & Double Attack ──────────────────────────────────
+  {
+    id: 13,
+    chapterId: 4,
+    chapter: 'Chapter 4 · Fork & Double Attack',
+    title: 'Two for One',
+    mentor: 'knight',
+    intro: "A fork attacks TWO pieces at once! Your enemy can only save one. Score!",
+    goalText: 'Win material with a fork.',
+    botBand: 'medium',
+    playerColor: 'w',
+  },
+  {
+    id: 14,
+    chapterId: 4,
+    chapter: 'Chapter 4 · Fork & Double Attack',
+    title: 'Fork Attack',
+    mentor: 'knight',
+    intro: "Knights are fork machines. Jump into the middle and hit two targets at once!",
+    goalText: 'Land a fork and win.',
+    botBand: 'medium',
+    playerColor: 'b',
+  },
+  {
+    id: 15,
+    chapterId: 4,
+    chapter: "Chapter 4 · Fork & Double Attack",
+    title: "Knight's Trick",
+    mentor: 'knight',
+    intro: "Queens, bishops, and pawns can fork too — not just knights! Look for the double attack.",
+    goalText: 'Win with a fork or double attack.',
+    botBand: 'medium',
+    playerColor: 'w',
+  },
+  {
+    id: 16,
+    chapterId: 4,
+    chapter: 'Chapter 4 · Fork & Double Attack',
+    title: 'Fork or Fight',
+    mentor: 'knight',
+    intro: "Set up a fork! Move your piece where it can hit two targets next move.",
+    goalText: 'Win with a fork tactic.',
+    botBand: 'medium',
+    playerColor: 'b',
+  },
+  {
+    id: 17,
+    chapterId: 4,
+    chapter: 'Chapter 4 · Fork & Double Attack',
+    title: 'Fork Master',
+    mentor: 'knight',
+    intro: "Hardest opponent yet. Find the fork — the bot has no idea it's coming!",
+    goalText: 'Land a fork against a strong bot.',
+    botBand: 'hard',
+    playerColor: 'w',
+  },
+
+  // ── Chapter 5: Pins & Skewers ─────────────────────────────────────────
+  {
+    id: 18,
+    chapterId: 5,
+    chapter: 'Chapter 5 · Pins & Skewers',
+    title: 'The Pin',
+    mentor: 'pawn',
+    intro: "A pin traps a piece in place! Move in front of it and the piece behind is doomed.",
+    goalText: 'Win material with a pin.',
+    botBand: 'medium',
+    playerColor: 'w',
+  },
+  {
+    id: 19,
+    chapterId: 5,
+    chapter: 'Chapter 5 · Pins & Skewers',
+    title: 'Skewer Strike',
+    mentor: 'pawn',
+    intro: "A skewer is a reverse pin — attack the big piece first, then grab what's behind it!",
+    goalText: 'Win material with a skewer.',
+    botBand: 'medium',
+    playerColor: 'b',
+  },
+  {
+    id: 20,
+    chapterId: 5,
+    chapter: 'Chapter 5 · Pins & Skewers',
+    title: 'Pin & Win',
+    mentor: 'pawn',
+    intro: "Use your bishops, rooks, and queen to pin enemy pieces. Pinned pieces can't escape!",
+    goalText: 'Win with pins and skewers.',
+    botBand: 'hard',
     playerColor: 'w',
   },
 ];

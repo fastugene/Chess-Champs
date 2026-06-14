@@ -4,8 +4,11 @@
  */
 import { get, set } from 'idb-keyval';
 import type { Chapter } from '@/curriculum/chapters';
+import { BAND_ORDER, type Band } from '@/engine/difficulty';
 
 const KEY = 'chess-champs:progress:v1';
+
+export type GameResult = 'win' | 'loss' | 'draw';
 
 export interface Progress {
   currentLevel: number;
@@ -21,6 +24,20 @@ export interface Progress {
   primersSeen: number[];
   /** Chapter ids the player has already mastered (so we celebrate once). */
   chaptersMastered: number[];
+  /**
+   * Auto-calibrated difficulty band — adjusts so the son wins 55–65% of
+   * recent games. Starts at 'rookie' and drifts upward as he improves.
+   */
+  botBand: Band;
+  /**
+   * Last 10 game results (oldest first). Used by the calibration loop to
+   * decide whether to bump or drop the difficulty band.
+   */
+  recentResults: GameResult[];
+  /** Current rank tier id (e.g. 'wood', 'stone', 'iron'). */
+  rankTier: string;
+  /** Division within the tier (3 = lowest, 1 = highest). */
+  rankDivision: number;
 }
 
 export const DEFAULT_PROGRESS: Progress = {
@@ -32,6 +49,10 @@ export const DEFAULT_PROGRESS: Progress = {
   unlockedChapters: [1],
   primersSeen: [],
   chaptersMastered: [],
+  botBand: 'rookie',
+  recentResults: [],
+  rankTier: 'wood',
+  rankDivision: 3,
 };
 
 export async function loadProgress(): Promise<Progress> {
@@ -138,4 +159,31 @@ export function starsFor(p: Progress, chapterId: number): number {
 /** Both goals met: tactic landed `starGoal` times AND XP threshold reached. */
 export function isChapterComplete(p: Progress, chapter: Chapter): boolean {
   return starsFor(p, chapter.id) >= chapter.starGoal && p.xp >= chapter.xpGoal;
+}
+
+/**
+ * Record a game result and auto-calibrate the difficulty band so the son wins
+ * 55–65% of recent games. Only recalibrates after 5+ results to avoid noise.
+ * Changes band at most one step at a time for smooth, invisible adjustment.
+ */
+export async function recordGameResult(result: GameResult): Promise<Progress> {
+  const p = await loadProgress();
+
+  const results: GameResult[] = [...p.recentResults, result].slice(-10);
+  p.recentResults = results;
+
+  if (results.length >= 5) {
+    const wins = results.filter((r) => r === 'win').length;
+    const winRate = wins / results.length;
+    const idx = BAND_ORDER.indexOf(p.botBand);
+
+    if (winRate > 0.65 && idx < BAND_ORDER.length - 1) {
+      p.botBand = BAND_ORDER[idx + 1];
+    } else if (winRate < 0.55 && idx > 0) {
+      p.botBand = BAND_ORDER[idx - 1];
+    }
+  }
+
+  await saveProgress(p);
+  return p;
 }

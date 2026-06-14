@@ -1,28 +1,31 @@
 /**
  * Difficulty bands for the opponent.
  *
- * Phase 1 uses a small in-app search (see ./bot.ts). Each band trades search
- * depth against a "blunder rate" — the chance the bot just plays a random legal
- * move, which mimics how a kid hangs a piece. Higher blunder rate = easier and,
- * importantly, leaves free pieces for the player to practise grabbing.
- *
- * Phase 2 swaps the search for Stockfish (WASM, Web Worker) behind the same
- * getBotMove() interface, and adds auto-calibration to a 55-65% win band.
+ * Phase 1: in-app minimax (bot.ts). Each band trades search depth against a
+ * "blunder rate" — the chance the bot just plays a random legal move.
+ * Phase 2: Stockfish WASM Web Worker. skillLevel (0-20) controls strength;
+ * depth caps the search so it stays snappy on mobile.
+ * Auto-calibration in progress.ts adjusts the active band to keep the son
+ * winning 55–65% of games without feeling a floor.
  */
 export type Band = 'rookie' | 'easy' | 'medium' | 'hard';
 
 export interface BotConfig {
-  /** Search depth in plies. */
+  /** Stockfish Skill Level (0 = weakest, 20 = full strength). */
+  skillLevel: number;
+  /** Max search depth in plies — keeps mobile latency acceptable. */
   depth: number;
-  /** Probability of playing a random legal move instead of a searched one. */
+  /** Minimax fallback: probability of a random legal move instead of searched. */
   blunderRate: number;
-  /** Pick randomly among the top-K searched moves (variety). */
+  /** Minimax fallback: pick randomly from the top-K searched moves. */
   topK: number;
 }
 
 export const BANDS: Record<Band, BotConfig> = {
-  rookie: { depth: 2, blunderRate: 0.4, topK: 5 },
-  easy: { depth: 2, blunderRate: 0.25, topK: 4 },
-  medium: { depth: 3, blunderRate: 0.12, topK: 2 },
-  hard: { depth: 3, blunderRate: 0.04, topK: 1 },
+  rookie: { skillLevel: 1,  depth: 5,  blunderRate: 0.40, topK: 5 },
+  easy:   { skillLevel: 4,  depth: 7,  blunderRate: 0.25, topK: 4 },
+  medium: { skillLevel: 8,  depth: 9,  blunderRate: 0.12, topK: 2 },
+  hard:   { skillLevel: 13, depth: 11, blunderRate: 0.04, topK: 1 },
 };
+
+export const BAND_ORDER: Band[] = ['rookie', 'easy', 'medium', 'hard'];

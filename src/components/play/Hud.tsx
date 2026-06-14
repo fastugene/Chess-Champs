@@ -13,6 +13,9 @@ export function Hud({
   stars,
   chapterXp,
   onInfo,
+  rankDisplay,
+  rankColor,
+  rankBadge,
 }: {
   chapter: string;
   title: string;
@@ -22,6 +25,9 @@ export function Hud({
   stars: number;
   chapterXp: number;
   onInfo: () => void;
+  rankDisplay: string;
+  rankColor: string;
+  rankBadge: string;
 }) {
   const thinking = useGame((s) => s.thinking);
   const turn = useGame((s) => s.turn);
@@ -37,7 +43,14 @@ export function Hud({
           <div className="hud-title">{chapter}</div>
           <div className="hud-sub">{title}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div
+            className="chip rank-chip"
+            style={{ color: rankColor, borderColor: rankColor }}
+            title="Your rank"
+          >
+            {rankBadge} {rankDisplay}
+          </div>
           <button className="chip" onClick={onInfo} aria-label="Chapter goal">
             🎯
           </button>

@@ -1,15 +1,29 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampArt } from '@/components/champs/ChampArt';
 import { resumeAudio } from '@/audio/sfx';
+import { loadProgress } from '@/persistence/progress';
+import { getRank } from '@/progression/ranks';
 
 export default function Home() {
   const router = useRouter();
+  const [rankDisplay, setRankDisplay] = useState('Wood III');
+  const [rankBadge, setRankBadge] = useState('🪵');
+  const [rankColor, setRankColor] = useState('#a07850');
 
-  // One tap from here to the board (PLAY -> board -> first move).
+  useEffect(() => {
+    void loadProgress().then((p) => {
+      const rank = getRank(p.xp, p.chaptersMastered);
+      setRankDisplay(rank.displayName);
+      setRankBadge(rank.tier.badge);
+      setRankColor(rank.tier.color);
+    });
+  }, []);
+
   const play = () => {
-    resumeAudio(); // unlock audio on the first user gesture
+    resumeAudio();
     router.push('/play');
   };
 
@@ -19,6 +33,13 @@ export default function Home() {
         CHESS
         <br />
         <span className="pop">CHAMPS</span>
+      </div>
+
+      <div
+        className="rank-badge-home"
+        style={{ color: rankColor, borderColor: rankColor }}
+      >
+        {rankBadge} {rankDisplay}
       </div>
 
       <div className="home-champs">
