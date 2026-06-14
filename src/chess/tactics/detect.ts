@@ -57,7 +57,7 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
         tier: 'epic',
         label: 'CHECKMATE!',
         sub: 'You win the battle!',
-        champId: 'finisher',
+        champId: 'queen',
       },
     ];
   }
@@ -73,23 +73,23 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       events.push({
         type: 'win-material',
         tier: gained >= 3 ? 'major' : 'minor',
-        label: gained >= 3 ? 'GREAT GRAB!' : 'Free Real Estate!',
+        label: 'FREE KILL!',
         sub: `+${gained}`,
         value: gained,
-        champId: 'bulwark',
+        champId: 'pawn',
       });
     } else if (gained > attackerVal) {
       events.push({
         type: 'win-material',
         tier: 'minor',
-        label: 'Nice win!',
+        label: 'WORTH IT!',
         sub: `+${gained - attackerVal}`,
         value: gained - attackerVal,
-        champId: 'bulwark',
+        champId: 'pawn',
       });
     } else {
       // Safe-ish capture / fair trade → small acknowledgement only.
-      events.push({ type: 'capture', tier: 'micro', label: 'Capture!', sub: `+${gained}` });
+      events.push({ type: 'capture', tier: 'micro', label: 'Kill!', sub: `+${gained}` });
     }
   }
 
@@ -100,7 +100,7 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       tier: 'major',
       label: 'FORK!',
       sub: 'Two targets at once!',
-      champId: 'forkfang',
+      champId: 'knight',
     });
   } else if (chess.isCheck() && events.length === 0) {
     // A plain check, only if nothing bigger happened.

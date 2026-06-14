@@ -1,14 +1,15 @@
 import { CHAMPS } from '@/progression/champs';
 
 /**
- * Champ mascot art — chunky, bold-outlined "brawler" characters drawn entirely
- * in SVG (no image files). They share a base rig (body + big head + determined
- * eyes + feet) and differ by colour, headgear, and a signature weapon — the
- * "shared construction kit" from the design doc, so the squad stays consistent
- * and new Champs are cheap to add.
+ * Champ art — the chess piece IS the character.
  *
- * This is the early art gut-check for the playtest: if the style lands with him,
- * we build the rest of the roster the same way; if not, we pivot cheaply.
+ * Each Champ is drawn as its chess-piece silhouette (instantly recognizable =
+ * great collectible identity) given a face with attitude: smirk + confident
+ * eyes, drawn with smooth curved paths so they can actually emote. One shared
+ * "construction kit" (CoolFace + shade + glow) keeps the squad consistent and
+ * makes adding Bishop/Rook/King cheap later.
+ *
+ * Style target: "cool / battle-brawler", friendly enough for a 9-year-old.
  */
 export function ChampArt({
   champId,
@@ -20,8 +21,10 @@ export function ChampArt({
   showGlow?: boolean;
 }) {
   const champ = CHAMPS[champId];
-  const color = champ?.color ?? '#7c9cff';
-  const dark = shade(color, -0.35);
+  const color = champ?.color ?? '#2f86ff';
+  const dark = shade(color, -0.34);
+  const light = shade(color, 0.32);
+  const foot = shade(color, -0.52);
   const outline = '#14172e';
   const gid = `glow-${champId}`;
 
@@ -42,130 +45,125 @@ export function ChampArt({
 
       {showGlow && <circle cx="80" cy="84" r="78" fill={`url(#${gid})`} />}
 
-      {/* weapon drawn behind the body for some champs */}
-      {champId === 'forkfang' && <Glaive color={dark} outline={outline} />}
-      {champId === 'finisher' && <Warhammer outline={outline} />}
-
-      {/* feet */}
-      <g stroke={outline} strokeWidth="4" strokeLinejoin="round">
-        <rect x="56" y="146" width="20" height="14" rx="6" fill={dark} />
-        <rect x="84" y="146" width="20" height="14" rx="6" fill={dark} />
-      </g>
-
-      {/* body */}
-      <rect
-        x="46"
-        y="96"
-        width="68"
-        height="56"
-        rx="22"
-        fill={color}
-        stroke={outline}
-        strokeWidth="4"
-      />
-
-      {/* head */}
-      <rect
-        x="38"
-        y="38"
-        width="84"
-        height="72"
-        rx="28"
-        fill={color}
-        stroke={outline}
-        strokeWidth="4"
-      />
-
-      {/* per-champ headgear */}
-      {champId === 'bulwark' && <Helmet color={dark} outline={outline} />}
-      {champId === 'forkfang' && <Horns color={dark} outline={outline} />}
-
-      {/* face */}
-      <Face champId={champId} outline={outline} />
-
-      {/* shield held to the side */}
-      {champId === 'bulwark' && <Shield outline={outline} />}
+      {champId === 'knight' ? (
+        <Knight color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      ) : champId === 'queen' ? (
+        <Queen color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      ) : (
+        <Pawn color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      )}
     </svg>
   );
 }
 
-function Face({ champId, outline }: { champId: string; outline: string }) {
-  const angry = champId === 'finisher';
+interface PartProps {
+  color: string;
+  dark: string;
+  light: string;
+  foot: string;
+  outline: string;
+}
+
+function Pawn({ color, dark, light, foot, outline }: PartProps) {
   return (
     <g>
-      {/* eyes */}
-      <g>
-        <ellipse cx="66" cy="74" rx="10" ry="12" fill="#fff" stroke={outline} strokeWidth="3" />
-        <ellipse cx="94" cy="74" rx="10" ry="12" fill="#fff" stroke={outline} strokeWidth="3" />
-        <circle cx="67" cy="77" r="5" fill={outline} />
-        <circle cx="93" cy="77" r="5" fill={outline} />
-        <circle cx="64.5" cy="72" r="2" fill="#fff" />
-        <circle cx="90.5" cy="72" r="2" fill="#fff" />
-      </g>
-      {/* eyebrows — slope inward for a confident/determined look */}
-      <g stroke={outline} strokeWidth="5" strokeLinecap="round">
-        <line x1="54" y1={angry ? '60' : '58'} x2="76" y2={angry ? '68' : '64'} />
-        <line x1="106" y1={angry ? '60' : '58'} x2="84" y2={angry ? '68' : '64'} />
-      </g>
-      {/* mouth */}
-      {champId === 'forkfang' ? (
-        <g>
-          <path d="M70 92 q10 8 20 0" fill="none" stroke={outline} strokeWidth="3.5" strokeLinecap="round" />
-          <path d="M72 92 l3 7 l3 -7 Z" fill="#fff" stroke={outline} strokeWidth="1.5" />
-          <path d="M85 92 l3 7 l3 -7 Z" fill="#fff" stroke={outline} strokeWidth="1.5" />
-        </g>
-      ) : (
-        <path d="M71 92 q9 7 18 0" fill="none" stroke={outline} strokeWidth="3.5" strokeLinecap="round" />
-      )}
+      <rect x="44" y="150" width="72" height="14" rx="7" fill={foot} />
+      <path d="M52 150 L60 108 Q80 96 100 108 L108 150 Z" fill={color} stroke={dark} strokeWidth="2" />
+      <ellipse cx="80" cy="106" rx="24" ry="7" fill={dark} />
+      <circle cx="80" cy="72" r="30" fill={color} stroke={dark} strokeWidth="2" />
+      <circle cx="70" cy="62" r="10" fill={light} opacity="0.6" />
+      <CoolFace cx={80} cy={70} s={1.4} outline={outline} />
     </g>
   );
 }
 
-function Helmet({ color, outline }: { color: string; outline: string }) {
+function Queen({ color, dark, light, foot, outline }: PartProps) {
   return (
-    <g stroke={outline} strokeWidth="4" strokeLinejoin="round">
-      <path d="M38 64 q0 -26 42 -26 q42 0 42 26 Z" fill={color} />
-      <rect x="74" y="22" width="12" height="18" rx="4" fill={color} />
-      <circle cx="80" cy="20" r="6" fill={color} />
+    <g>
+      <rect x="44" y="150" width="72" height="14" rx="7" fill={foot} />
+      <path d="M48 150 L60 84 Q80 74 100 84 L112 150 Z" fill={color} stroke={dark} strokeWidth="2" />
+      <ellipse cx="80" cy="84" rx="24" ry="7" fill={dark} />
+      <circle cx="80" cy="58" r="27" fill={color} stroke={dark} strokeWidth="2" />
+      <circle cx="71" cy="49" r="9" fill={light} opacity="0.6" />
+      <rect x="56" y="28" width="48" height="10" rx="2" fill={dark} />
+      <path
+        d="M56 30 L60 16 L65 30 Z M65 30 L70 19 L75 30 Z M75 30 L80 13 L85 30 Z M85 30 L90 19 L95 30 Z M95 30 L100 16 L104 30 Z"
+        fill={color}
+        stroke={dark}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="80" cy="14" r="2.6" fill="#b06bff" />
+      <circle cx="60" cy="17" r="2" fill="#b06bff" />
+      <circle cx="100" cy="17" r="2" fill="#b06bff" />
+      <CoolFace cx={80} cy={58} s={1.2} outline={outline} />
     </g>
   );
 }
 
-function Horns({ color, outline }: { color: string; outline: string }) {
+function Knight({ color, dark, foot, outline }: PartProps) {
   return (
-    <g fill={color} stroke={outline} strokeWidth="4" strokeLinejoin="round">
-      <path d="M46 44 l-10 -22 l20 12 Z" />
-      <path d="M114 44 l10 -22 l-20 12 Z" />
+    <g>
+      <rect x="44" y="150" width="72" height="14" rx="7" fill={foot} />
+      <path d="M52 150 L58 120 L102 120 L108 150 Z" fill={dark} />
+      <ellipse cx="80" cy="120" rx="26" ry="7" fill={dark} />
+      <path
+        d="M50 96 C52 82 58 70 66 60 C70 50 76 44 80 40 L84 30 L90 44 L94 40 L100 52 C106 70 108 92 104 110 C100 120 88 122 78 118 C70 116 64 110 60 104 C54 102 50 102 50 96 Z"
+        fill={color}
+        stroke={dark}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M92 46 C104 70 106 96 100 114" stroke={dark} strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M84 50 C94 72 96 96 92 112" stroke={dark} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <ellipse cx="55" cy="88" rx="3" ry="2.2" fill={outline} />
+      <ellipse cx="72" cy="66" rx="5.5" ry="6.5" fill="#ffffff" />
+      <circle cx="71" cy="68" r="3.2" fill={outline} />
+      <circle cx="70" cy="65" r="1.2" fill="#ffffff" />
+      <path d="M62 56 Q72 53 80 59" stroke={outline} strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M50 95 Q58 102 69 98" stroke={outline} strokeWidth="2.4" fill="none" strokeLinecap="round" />
     </g>
   );
 }
 
-function Shield({ outline }: { outline: string }) {
+/**
+ * Shared face kit: confident eyes (with a slight lid + sparkle) and an
+ * asymmetric smirk. Scales with `s`. Tuned for "cool, not stern" — the
+ * attitude comes from the smirk + pupil shift, never an angry brow.
+ */
+function CoolFace({ cx, cy, s, outline }: { cx: number; cy: number; s: number; outline: string }) {
+  const eo = 7 * s;
+  const ew = 5 * s;
+  const eh = 6 * s;
   return (
-    <g stroke={outline} strokeWidth="4" strokeLinejoin="round">
-      <path d="M118 84 h30 v26 q0 18 -15 24 q-15 -6 -15 -24 Z" fill="#cdd6ee" />
-      <line x1="133" y1="90" x2="133" y2="126" stroke="#8893b8" strokeWidth="4" />
-      <line x1="120" y1="103" x2="146" y2="103" stroke="#8893b8" strokeWidth="4" />
-    </g>
-  );
-}
-
-function Glaive({ color, outline }: { color: string; outline: string }) {
-  return (
-    <g stroke={outline} strokeWidth="4" strokeLinejoin="round" strokeLinecap="round">
-      <line x1="128" y1="158" x2="128" y2="40" stroke="#8a6a3a" strokeWidth="7" />
-      <path d="M118 44 l10 -22 l10 22" fill={color} />
-      <line x1="121" y1="40" x2="121" y2="20" stroke={color} strokeWidth="6" />
-      <line x1="135" y1="40" x2="135" y2="20" stroke={color} strokeWidth="6" />
-    </g>
-  );
-}
-
-function Warhammer({ outline }: { outline: string }) {
-  return (
-    <g stroke={outline} strokeWidth="4" strokeLinejoin="round">
-      <line x1="126" y1="156" x2="126" y2="44" stroke="#8a6a3a" strokeWidth="7" strokeLinecap="round" />
-      <rect x="110" y="26" width="34" height="26" rx="6" fill="#b8bed6" />
+    <g>
+      <ellipse cx={cx - eo} cy={cy} rx={ew} ry={eh} fill="#ffffff" />
+      <ellipse cx={cx + eo} cy={cy} rx={ew} ry={eh} fill="#ffffff" />
+      <circle cx={cx - eo + 1.2 * s} cy={cy + 1.5 * s} r={2.8 * s} fill={outline} />
+      <circle cx={cx + eo + 1.2 * s} cy={cy + 1.5 * s} r={2.8 * s} fill={outline} />
+      <circle cx={cx - eo + 0.2 * s} cy={cy - 0.6 * s} r={1 * s} fill="#ffffff" />
+      <circle cx={cx + eo + 0.2 * s} cy={cy - 0.6 * s} r={1 * s} fill="#ffffff" />
+      <path
+        d={`M${cx - eo - ew} ${cy - eh + 1.5 * s} Q ${cx - eo} ${cy - eh - 1 * s} ${cx - eo + ew} ${cy - eh + 2.5 * s}`}
+        stroke={outline}
+        strokeWidth={1.7 * s}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${cx + eo - ew} ${cy - eh + 2.5 * s} Q ${cx + eo} ${cy - eh - 1 * s} ${cx + eo + ew} ${cy - eh + 1.5 * s}`}
+        stroke={outline}
+        strokeWidth={1.7 * s}
+        fill="none"
+        strokeLinecap="round"
+      />
+      <path
+        d={`M${cx - 7 * s} ${cy + 10 * s} Q ${cx + 1 * s} ${cy + 15.5 * s} ${cx + 8 * s} ${cy + 9 * s}`}
+        stroke={outline}
+        strokeWidth={2.6 * s}
+        fill="none"
+        strokeLinecap="round"
+      />
     </g>
   );
 }

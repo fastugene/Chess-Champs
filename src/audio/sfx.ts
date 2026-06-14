@@ -119,3 +119,37 @@ export function playSound(name: SoundName): void {
       break;
   }
 }
+
+/**
+ * Escalating kill-streak sting (Brawl Stars "rising pitch" + Dota 2 "deep hit").
+ * Each successive kill (level 2, 3, 4, …) plays higher, brighter, and with more
+ * notes; from level 4 we add a low sub-bass thump for announcer-style weight.
+ * `level` is the streak count (2 = double kill, 3 = triple, …).
+ */
+export function playKillStreak(level: number): void {
+  const tier = Math.min(Math.max(level, 2), 6); // 2..6
+  // Root climbs a few semitones per tier (≈ 1.122x = 2 semitones).
+  const root = 523 * Math.pow(1.122, (tier - 2) * 2);
+  const notes = Math.min(tier, 5); // more notes the higher the streak
+  const step = 0.07;
+  const bright: OscillatorType = tier >= 4 ? 'square' : 'triangle';
+
+  const blips: Blip[] = [];
+  for (let i = 0; i < notes; i++) {
+    blips.push({
+      freq: root * Math.pow(1.26, i), // rising major-ish arpeggio
+      at: i * step,
+      dur: 0.12,
+      type: bright,
+      vol: 0.16,
+    });
+  }
+  // Final accent note, an octave up, a touch longer.
+  blips.push({ freq: root * 2.2, at: notes * step, dur: 0.2, type: 'triangle', vol: 0.18 });
+
+  // Deep "boom" weight at higher tiers (the Dota announcer thump).
+  if (tier >= 4) {
+    blips.push({ freq: 84 - (tier - 4) * 6, at: 0, dur: 0.26, type: 'sine', vol: 0.22 });
+  }
+  play(blips);
+}

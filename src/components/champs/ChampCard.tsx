@@ -29,6 +29,7 @@ export function ChampCard({
       <div className="rarity" style={{ color: RARITY_COLOR[champ.rarity] }}>
         {champ.rarity} · {champ.tactic}
       </div>
+      <div className="champ-lesson">{champ.lesson}</div>
       {power != null && <PowerBar power={power} />}
     </div>
   );

@@ -11,10 +11,40 @@ import { PIECE_VALUE } from '@/chess/attacks';
 import { detectPlayerEvents, type TacticEvent } from '@/chess/tactics/detect';
 import { getBotMove } from '@/engine/engineClient';
 import type { Band } from '@/engine/difficulty';
-import { playSound, resumeAudio } from '@/audio/sfx';
-import { HAPTIC, vibrate } from '@/haptics/haptics';
+import { playKillStreak, playSound, resumeAudio } from '@/audio/sfx';
+import { speak } from '@/audio/speech';
+import { HAPTIC, killStreakHaptic, vibrate } from '@/haptics/haptics';
 
 let game = new Chess();
+
+/** Escalating kill-streak headline (Dota-flavoured, kid-appropriate). */
+function streakLabel(n: number): string {
+  if (n >= 6) return 'RAMPAGE!';
+  if (n === 5) return 'UNSTOPPABLE!';
+  if (n === 4) return 'MEGA KILL!';
+  if (n === 3) return 'TRIPLE KILL!';
+  return 'DOUBLE KILL!';
+}
+
+/** Natural-speech version of the streak label for the announcer voice. */
+function streakVoice(n: number): string {
+  if (n >= 6) return 'Rampage!';
+  if (n === 5) return 'Unstoppable!';
+  if (n === 4) return 'Mega Kill!';
+  if (n === 3) return 'Triple Kill!';
+  return 'Double Kill!';
+}
+
+/** Announcer line for a non-streak tactic event. Only called for major/epic. */
+function tacticVoice(event: import('@/chess/tactics/detect').TacticEvent): string {
+  switch (event.type) {
+    case 'checkmate':  return 'Checkmate! You win!';
+    case 'fork':       return 'Fork! Two targets at once!';
+    case 'win-material':
+      return event.label === 'FREE KILL!' ? 'Free Kill!' : 'Worth it!';
+    default:           return '';
+  }
+}
 
 export type GameStatus = 'idle' | 'playing' | 'checkmate' | 'stalemate' | 'draw';
 
@@ -42,6 +72,8 @@ interface GameStore {
   eventSeq: number;
   /** Total material the player has captured this game (for the HUD). */
   playerCaptured: number;
+  /** Consecutive captures by the player this game (drives DOUBLE KILL / TRIPLE KILL). */
+  captureStreak: number;
 
   startGame: (opts: StartOptions) => void;
   selectSquare: (sq: Square) => void;
@@ -119,11 +151,35 @@ export const useGame = create<GameStore>((set, get) => {
     }
 
     const events = detectPlayerEvents(game.fen(), move);
+    const prevStreak = get().captureStreak;
+    const newStreak = move.captured ? prevStreak + 1 : 0;
+    const isStreak = move.captured && newStreak >= 2;
+
+    // Escalating kill-streak (Brawl Stars / Dota 2 vibe): relabel the capture and
+    // make sure it earns the big slam-in banner.
+    if (isStreak) {
+      const killEvent = events.find((e) => e.type === 'capture' || e.type === 'win-material');
+      if (killEvent) {
+        killEvent.label = streakLabel(newStreak);
+        if (newStreak >= 4) killEvent.tier = 'major';
+        else if (killEvent.tier === 'micro') killEvent.tier = 'minor';
+      }
+    }
+
     const gainedMaterial = move.captured ? PIECE_VALUE[move.captured] : 0;
     const hasBigEvent = events.some((e) => e.tier !== 'micro');
-    if (hasBigEvent) {
+    if (isStreak) {
+      playKillStreak(newStreak);
+      vibrate(killStreakHaptic(newStreak));
+      speak(streakVoice(newStreak));
+    } else if (hasBigEvent) {
       playSound('reward');
       vibrate(HAPTIC.reward);
+      const bigEvent = events.find((e) => e.tier === 'major' || e.tier === 'epic');
+      if (bigEvent) {
+        const line = tacticVoice(bigEvent);
+        if (line) speak(line);
+      }
     }
 
     sync({
@@ -133,6 +189,7 @@ export const useGame = create<GameStore>((set, get) => {
       events,
       eventSeq: get().eventSeq + 1,
       playerCaptured: get().playerCaptured + gainedMaterial,
+      captureStreak: newStreak,
     });
 
     if (game.isGameOver()) {
@@ -157,6 +214,7 @@ export const useGame = create<GameStore>((set, get) => {
     events: [],
     eventSeq: 0,
     playerCaptured: 0,
+    captureStreak: 0,
 
     startGame: ({ fen, playerColor = 'w', band }) => {
       game = fen ? new Chess(fen) : new Chess();
@@ -170,6 +228,7 @@ export const useGame = create<GameStore>((set, get) => {
         events: [],
         eventSeq: 0,
         playerCaptured: 0,
+        captureStreak: 0,
         thinking: false,
         winner: null,
         status: 'playing',

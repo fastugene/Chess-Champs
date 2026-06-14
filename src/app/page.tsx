@@ -22,9 +22,9 @@ export default function Home() {
       </div>
 
       <div className="home-champs">
-        <ChampArt champId="bulwark" size={86} />
-        <ChampArt champId="forkfang" size={108} />
-        <ChampArt champId="finisher" size={86} />
+        <ChampArt champId="pawn" size={86} />
+        <ChampArt champId="knight" size={108} />
+        <ChampArt champId="queen" size={86} />
       </div>
 
       <div className="tagline">Collect Champs. Climb the ranks. Become a chess legend!</div>

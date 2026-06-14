@@ -8,6 +8,8 @@ import type { Color } from 'chess.js';
 
 export interface Level {
   id: number;
+  /** Chapter this level belongs to (see chapters.ts). */
+  chapterId: number;
   chapter: string;
   title: string;
   /** Champ id who mentors this level. */
@@ -24,9 +26,10 @@ export interface Level {
 export const LEVELS: Level[] = [
   {
     id: 1,
+    chapterId: 1,
     chapter: 'Chapter 1 · Safety & Sight',
     title: 'First Battle',
-    mentor: 'bulwark',
+    mentor: 'pawn',
     intro:
       "Grab any piece your foe leaves undefended — that's free treasure! And keep YOUR pieces safe.",
     goalText: 'Win the battle by capturing safely.',

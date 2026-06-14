@@ -3,6 +3,7 @@
  * localStorage fallback). No accounts, no network, no data collection.
  */
 import { get, set } from 'idb-keyval';
+import type { Chapter } from '@/curriculum/chapters';
 
 const KEY = 'chess-champs:progress:v1';
 
@@ -12,6 +13,14 @@ export interface Progress {
   levelsCompleted: number[];
   /** Champ id -> power level (1..11). */
   champPower: Record<string, number>;
+  /** Chapter id -> stars earned so far (tactic landings, capped at starGoal). */
+  chapterStars: Record<number, number>;
+  /** Chapter ids the player has unlocked. */
+  unlockedChapters: number[];
+  /** Chapter ids whose primer has auto-shown once (so we don't nag). */
+  primersSeen: number[];
+  /** Chapter ids the player has already mastered (so we celebrate once). */
+  chaptersMastered: number[];
 }
 
 export const DEFAULT_PROGRESS: Progress = {
@@ -19,6 +28,10 @@ export const DEFAULT_PROGRESS: Progress = {
   xp: 0,
   levelsCompleted: [],
   champPower: {},
+  chapterStars: {},
+  unlockedChapters: [1],
+  primersSeen: [],
+  chaptersMastered: [],
 };
 
 export async function loadProgress(): Promise<Progress> {
@@ -71,4 +84,58 @@ export async function completeLevel(
   }
   await saveProgress(p);
   return p;
+}
+
+/** Add XP from any source (playing always earns some — never zero). */
+export async function addXp(amount: number): Promise<Progress> {
+  const p = await loadProgress();
+  p.xp += amount;
+  await saveProgress(p);
+  return p;
+}
+
+/**
+ * Record one landing of a chapter's tactic (one star), capped at the chapter's
+ * star goal. Returns the new progress so the UI can show the updated count.
+ */
+export async function addStar(chapterId: number, starGoal: number): Promise<Progress> {
+  const p = await loadProgress();
+  const current = p.chapterStars[chapterId] ?? 0;
+  p.chapterStars[chapterId] = Math.min(starGoal, current + 1);
+  await saveProgress(p);
+  return p;
+}
+
+/** Mark a chapter's primer as seen so it doesn't auto-show again. */
+export async function markPrimerSeen(chapterId: number): Promise<Progress> {
+  const p = await loadProgress();
+  if (!p.primersSeen.includes(chapterId)) p.primersSeen.push(chapterId);
+  await saveProgress(p);
+  return p;
+}
+
+/** Unlock a chapter (idempotent). */
+export async function unlockChapter(chapterId: number): Promise<Progress> {
+  const p = await loadProgress();
+  if (!p.unlockedChapters.includes(chapterId)) p.unlockedChapters.push(chapterId);
+  await saveProgress(p);
+  return p;
+}
+
+/** Record that a chapter has been mastered (idempotent). */
+export async function markChapterMastered(chapterId: number): Promise<Progress> {
+  const p = await loadProgress();
+  if (!p.chaptersMastered.includes(chapterId)) p.chaptersMastered.push(chapterId);
+  await saveProgress(p);
+  return p;
+}
+
+/** Stars earned so far for a chapter. */
+export function starsFor(p: Progress, chapterId: number): number {
+  return p.chapterStars[chapterId] ?? 0;
+}
+
+/** Both goals met: tactic landed `starGoal` times AND XP threshold reached. */
+export function isChapterComplete(p: Progress, chapter: Chapter): boolean {
+  return starsFor(p, chapter.id) >= chapter.starGoal && p.xp >= chapter.xpGoal;
 }

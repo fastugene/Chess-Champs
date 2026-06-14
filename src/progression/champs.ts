@@ -17,6 +17,12 @@ export interface Champ {
   gear: string;
   /** One-line, kid-voice tagline. */
   tagline: string;
+  /**
+   * 1-2 line, kid-voice explanation of this Champ's tactic. Shown every time the
+   * tactic is performed and whenever the character comes up, so the learning is
+   * reinforced right at the dopamine moment.
+   */
+  lesson: string;
 }
 
 export const RARITY_COLOR: Record<Rarity, string> = {
@@ -29,32 +35,35 @@ export const RARITY_COLOR: Record<Rarity, string> = {
 };
 
 export const CHAMPS: Record<string, Champ> = {
-  bulwark: {
-    id: 'bulwark',
-    name: 'Bulwark',
-    tactic: 'Defense',
+  pawn: {
+    id: 'pawn',
+    name: 'Scrapper the Pawn',
+    tactic: 'Safety',
     rarity: 'Common',
-    color: '#7c9cff',
-    gear: 'Tower Shield',
-    tagline: 'Nothing gets past me.',
+    color: '#2f86ff',
+    gear: 'Battle Buckler',
+    tagline: 'Small but mighty.',
+    lesson: 'Keep your squad safe — never leave a piece where it can be grabbed for free.',
   },
-  forkfang: {
-    id: 'forkfang',
-    name: 'Forkfang',
+  knight: {
+    id: 'knight',
+    name: 'Forkmane the Knight',
     tactic: 'Fork',
     rarity: 'Rare',
-    color: '#4fd675',
-    gear: 'Twin Glaive',
+    color: '#18c85f',
+    gear: 'Twin Hooves',
     tagline: 'Two targets, one strike!',
+    lesson: 'A fork hits two pieces at once — your foe can only save one!',
   },
-  finisher: {
-    id: 'finisher',
-    name: 'Finisher',
+  queen: {
+    id: 'queen',
+    name: 'Finisher the Queen',
     tactic: 'Checkmate',
-    rarity: 'Common',
-    color: '#ffc93c',
-    gear: 'Warhammer',
+    rarity: 'Epic',
+    color: '#ffc21f',
+    gear: 'Royal Crown',
     tagline: "Let's end this!",
+    lesson: 'Checkmate! The king is trapped with nowhere to run. You win!',
   },
 };
 

@@ -1,12 +1,22 @@
 'use client';
 
 import { ChampCard } from '@/components/champs/ChampCard';
+import { MissionTracker } from '@/components/play/MissionTracker';
+import type { Chapter } from '@/curriculum/chapters';
 
 export interface RecapData {
   result: 'win' | 'lose' | 'draw';
   xp: number;
   championId?: string;
   championPower?: number;
+  /** Active chapter, for the mission tracker + mastery nudge. */
+  chapter?: Chapter;
+  /** Stars earned so far in the chapter. */
+  stars?: number;
+  /** Total XP after this game (for the chapter XP bar). */
+  chapterXp?: number;
+  /** True the first game the chapter's goals are both met. */
+  chapterMastered?: boolean;
 }
 
 /**
@@ -18,6 +28,10 @@ export function RecapCard({
   xp,
   championId,
   championPower,
+  chapter,
+  stars,
+  chapterXp,
+  chapterMastered,
   onPlayAgain,
   onHome,
 }: RecapData & { onPlayAgain: () => void; onHome: () => void }) {
@@ -30,9 +44,23 @@ export function RecapCard({
         ? 'So close! Every game makes you sharper.'
         : "Losing teaches you the most — you're getting stronger every battle!";
 
+  // Mastery nudge for the chapter's tactic ("1 more to master Safety!").
+  let nudge: string | null = null;
+  if (chapter && stars != null) {
+    const remaining = chapter.starGoal - stars;
+    nudge =
+      remaining <= 0
+        ? `${chapter.tactic} mastered! ⭐`
+        : `${remaining} more to master ${chapter.tactic}!`;
+  }
+
   return (
     <div className="overlay">
       <div className="card">
+        {chapterMastered && chapter && (
+          <div className="chapter-mastered">🎉 Chapter Mastered: {chapter.title}!</div>
+        )}
+
         <h2>{title}</h2>
         <p>{msg}</p>
 
@@ -49,6 +77,13 @@ export function RecapCard({
         >
           + {xp} XP
         </div>
+
+        {chapter && stars != null && chapterXp != null && (
+          <div className="recap-mission">
+            {nudge && <div className="recap-nudge">{nudge}</div>}
+            <MissionTracker chapter={chapter} stars={stars} xp={chapterXp} />
+          </div>
+        )}
 
         <div className="card-actions">
           <button className="btn btn-ghost" onClick={onHome}>

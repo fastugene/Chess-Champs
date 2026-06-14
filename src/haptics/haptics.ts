@@ -20,3 +20,16 @@ export const HAPTIC = {
   powerup: [0, 12, 20, 12, 20, 30] as number[],
   win: [0, 26, 40, 26, 40, 60] as number[],
 };
+
+/**
+ * Escalating buzz for a kill streak — more, longer pulses the higher the streak
+ * (level 2 = double kill, up). Caps so it never feels obnoxious.
+ */
+export function killStreakHaptic(level: number): number[] {
+  const tier = Math.min(Math.max(level, 2), 6);
+  const pattern: number[] = [];
+  for (let i = 0; i < tier; i++) {
+    pattern.push(0, 18 + i * 6, 26);
+  }
+  return pattern;
+}
