@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampArt } from '@/components/champs/ChampArt';
-import { CHAPTERS } from '@/curriculum/chapters';
+import { ChapterPrimer } from '@/components/play/ChapterPrimer';
+import { CHAPTERS, type Chapter } from '@/curriculum/chapters';
 import { loadProgress, starsFor, type Progress, DEFAULT_PROGRESS } from '@/persistence/progress';
 
 function StarRow({ filled, total }: { filled: number; total: number }) {
@@ -21,6 +22,7 @@ function StarRow({ filled, total }: { filled: number; total: number }) {
 export default function CampaignPage() {
   const router = useRouter();
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
+  const [tutorialChapter, setTutorialChapter] = useState<Chapter | null>(null);
 
   useEffect(() => {
     void loadProgress().then(setProgress);
@@ -64,13 +66,22 @@ export default function CampaignPage() {
               </div>
 
               {unlocked && (
-                <button
-                  className="btn btn-primary"
-                  style={{ marginTop: 10, fontSize: 15, padding: '10px 0', width: '100%' }}
-                  onClick={() => router.push('/play')}
-                >
-                  {mastered ? '🔁 Replay' : '▶ Play'}
-                </button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button
+                    className="btn btn-ghost"
+                    style={{ flex: 1, fontSize: 14, padding: '10px 0' }}
+                    onClick={() => setTutorialChapter(ch)}
+                  >
+                    🎓 Tutorial
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    style={{ flex: 1, fontSize: 14, padding: '10px 0' }}
+                    onClick={() => router.push('/play')}
+                  >
+                    {mastered ? '🔁 Replay' : '▶ Play'}
+                  </button>
+                </div>
               )}
             </div>
           );
@@ -80,6 +91,16 @@ export default function CampaignPage() {
       <p className="muted" style={{ marginTop: 20 }}>
         Master each chapter's tactic to unlock the next!
       </p>
+
+      {tutorialChapter && (
+        <ChapterPrimer
+          chapter={tutorialChapter}
+          stars={starsFor(progress, tutorialChapter.id)}
+          xp={progress.xp}
+          ctaLabel="Got it! ▶"
+          onClose={() => setTutorialChapter(null)}
+        />
+      )}
     </div>
   );
 }
