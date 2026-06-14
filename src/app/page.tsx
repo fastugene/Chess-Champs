@@ -75,13 +75,23 @@ export default function Home() {
         ▶ PLAY
       </button>
 
-      <button
-        className="btn btn-ghost"
-        style={{ maxWidth: 320, width: '100%', fontSize: 16 }}
-        onClick={() => router.push('/campaign')}
-      >
-        📜 Campaign
-      </button>
+      <div style={{ display: 'flex', gap: 10, maxWidth: 320, width: '100%' }}>
+        <button
+          className="btn btn-ghost"
+          style={{ flex: 1, fontSize: 16 }}
+          onClick={() => router.push('/campaign')}
+        >
+          📜 Campaign
+        </button>
+        <button
+          className="btn btn-ghost"
+          style={{ fontSize: 16, padding: '14px 18px' }}
+          onClick={() => router.push('/settings')}
+          aria-label="Settings"
+        >
+          ⚙️
+        </button>
+      </div>
     </div>
   );
 }
