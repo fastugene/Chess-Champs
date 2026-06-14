@@ -91,7 +91,10 @@ export function TutorialBoard({
             const next = { ...prev };
             const moving = prev[from];
             if (moving) {
-              next[to] = moving;
+              const destRank = parseInt(to[1]);
+              const isPromotion =
+                moving.type === 'p' && (destRank === 8 || destRank === 1);
+              next[to] = isPromotion ? { type: 'q', color: moving.color } : moving;
               delete next[from];
             }
             return next;

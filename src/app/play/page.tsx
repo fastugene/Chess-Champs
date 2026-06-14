@@ -45,6 +45,7 @@ export default function PlayPage() {
   const [recap, setRecap] = useState<RecapData | null>(null);
   const handledGameOver = useRef(false);
   const lastSeq = useRef(0);
+  const bestEventRef = useRef<import('@/chess/tactics/detect').TacticEvent | null>(null);
 
   const startGame = useGame((s) => s.startGame);
   const status = useGame((s) => s.status);
@@ -70,6 +71,7 @@ export default function PlayPage() {
   const begin = useCallback(() => {
     handledGameOver.current = false;
     lastSeq.current = 0;
+    bestEventRef.current = null;
     // Use the auto-calibrated band so difficulty adapts to the son's skill.
     startGame({ playerColor: level.playerColor, band: progress.botBand });
     setPhase('playing');
@@ -84,6 +86,14 @@ export default function PlayPage() {
     if (eventSeq === lastSeq.current) return;
     lastSeq.current = eventSeq;
     if (events.length === 0) return;
+
+    // Track the best tactic event for the recap's shining-moment panel.
+    const tierScore: Record<string, number> = { checkmate: 4, fork: 3, 'discovered-attack': 3, pin: 3, skewer: 3, 'win-material': 2, capture: 1 };
+    for (const e of events) {
+      const cur = bestEventRef.current;
+      if (!cur || (tierScore[e.type] ?? 0) > (tierScore[cur.type] ?? 0)) bestEventRef.current = e;
+    }
+
     const landed = events.some((e) => chapter.starEventTypes.includes(e.type));
     if (!landed) return;
     void addStar(chapter.id, chapter.starGoal).then(setProgress);
@@ -124,6 +134,7 @@ export default function PlayPage() {
         stars: starsFor(p, ch.id),
         chapterXp: p.xp,
         chapterMastered,
+        topEvent: bestEventRef.current ?? undefined,
       });
     });
   }, [status, phase, winner, playerColor, level.id]);

@@ -161,13 +161,62 @@ export function isChapterComplete(p: Progress, chapter: Chapter): boolean {
   return starsFor(p, chapter.id) >= chapter.starGoal && p.xp >= chapter.xpGoal;
 }
 
+// ── Parent settings (stored under a separate key, never shown to the kid) ──
+
+const PARENT_KEY = 'chess-champs:parent:v1';
+
+export interface ParentSettings {
+  speechMuted: boolean;
+  /** Minimum difficulty band — bot never goes easier than this. */
+  bandFloor: Band;
+  /** Maximum difficulty band — bot never goes harder than this. */
+  bandCeiling: Band;
+}
+
+export const DEFAULT_PARENT: ParentSettings = {
+  speechMuted: false,
+  bandFloor: 'rookie',
+  bandCeiling: 'hard',
+};
+
+export async function loadParentSettings(): Promise<ParentSettings> {
+  try {
+    const v = await get<ParentSettings>(PARENT_KEY);
+    if (v) return { ...DEFAULT_PARENT, ...v };
+  } catch { /* ignore */ }
+  if (typeof localStorage !== 'undefined') {
+    const raw = localStorage.getItem(PARENT_KEY);
+    if (raw) {
+      try { return { ...DEFAULT_PARENT, ...(JSON.parse(raw) as ParentSettings) }; } catch { /* ignore */ }
+    }
+  }
+  return { ...DEFAULT_PARENT };
+}
+
+export async function saveParentSettings(s: ParentSettings): Promise<void> {
+  try { await set(PARENT_KEY, s); } catch { /* ignore */ }
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem(PARENT_KEY, JSON.stringify(s)); } catch { /* ignore */ }
+  }
+}
+
+/** Wipe all game progress (keeps parent settings). */
+export async function resetProgress(): Promise<void> {
+  try { await set(KEY, DEFAULT_PROGRESS); } catch { /* ignore */ }
+  if (typeof localStorage !== 'undefined') {
+    try { localStorage.setItem(KEY, JSON.stringify(DEFAULT_PROGRESS)); } catch { /* ignore */ }
+  }
+}
+
 /**
  * Record a game result and auto-calibrate the difficulty band so the son wins
  * 55–65% of recent games. Only recalibrates after 5+ results to avoid noise.
  * Changes band at most one step at a time for smooth, invisible adjustment.
+ * Respects the parent's floor/ceiling if set.
  */
 export async function recordGameResult(result: GameResult): Promise<Progress> {
   const p = await loadProgress();
+  const parent = await loadParentSettings();
 
   const results: GameResult[] = [...p.recentResults, result].slice(-10);
   p.recentResults = results;
@@ -176,10 +225,12 @@ export async function recordGameResult(result: GameResult): Promise<Progress> {
     const wins = results.filter((r) => r === 'win').length;
     const winRate = wins / results.length;
     const idx = BAND_ORDER.indexOf(p.botBand);
+    const floorIdx = BAND_ORDER.indexOf(parent.bandFloor);
+    const ceilIdx = BAND_ORDER.indexOf(parent.bandCeiling);
 
-    if (winRate > 0.65 && idx < BAND_ORDER.length - 1) {
+    if (winRate > 0.65 && idx < ceilIdx) {
       p.botBand = BAND_ORDER[idx + 1];
-    } else if (winRate < 0.55 && idx > 0) {
+    } else if (winRate < 0.55 && idx > floorIdx) {
       p.botBand = BAND_ORDER[idx - 1];
     }
   }

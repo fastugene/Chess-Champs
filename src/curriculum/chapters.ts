@@ -265,6 +265,96 @@ export const CHAPTERS: Chapter[] = [
     starEventTypes: ['pin', 'skewer'],
     levelIds: [18, 19, 20],
   },
+
+  // ── Chapter 6: Discovered Attacks ─────────────────────────────────────
+  {
+    id: 6,
+    title: 'Discovered Attacks',
+    mentor: 'knight',
+    tactic: 'Discovery',
+    concept: 'A discovered attack hides a secret weapon! Move one piece out of the way and reveal a devastating attack from behind it!',
+    demo: {
+      // White: Ke1, Bg2, Nd5 — Black: Ke8, Ra8. Nd5→b4 reveals Bg2 attacking Ra8.
+      fen: 'r3k3/8/8/3N4/8/8/6B1/4K3 w - - 0 1',
+      highlight: ['d5', 'b4', 'g2', 'a8'],
+      caption: 'The knight steps aside -- the bishop fires through and wins the rook. Discovered attack!',
+    },
+    tutorial: {
+      fen: 'r3k3/8/8/3N4/8/8/6B1/4K3 w - - 0 1',
+      intro: {
+        text: "Forkmane here! But this time we are using a SECRET trick -- a piece hiding behind my knight is ready to strike!",
+        voice: 'tut-discovered-intro',
+      },
+      explain: {
+        text: 'A discovered attack works like a trap. You move one piece out of the way, and the piece BEHIND IT suddenly attacks something big. The enemy never sees it coming!',
+        voice: 'tut-discovered-what',
+      },
+      demo: {
+        from: 'd5',
+        to: 'b4',
+        caption: 'The knight jumps away -- and the bishop shoots all the way to win the rook. Discovered attack!',
+        voice: 'tut-discovered-watch',
+      },
+      practice: {
+        prompt: 'Move the knight out of the way to unleash the bishop!',
+        voice: 'tut-discovered-try',
+        from: 'd5',
+        to: 'b4',
+        success: 'YES! The knight revealed the bishop -- free rook!',
+        successVoice: 'tut-discovered-yes',
+        nudge: 'Move the knight from d5 to b4 to reveal the bishop behind it!',
+      },
+    },
+    starGoal: 3,
+    xpGoal: 4500,
+    starEventTypes: ['discovered-attack'],
+    levelIds: [21, 22, 23, 24],
+  },
+
+  // ── Chapter 7: Endgames & Planning ────────────────────────────────────
+  {
+    id: 7,
+    title: 'Endgames & Planning',
+    mentor: 'pawn',
+    tactic: 'Endgame',
+    concept: 'In the endgame, your PAWN can become a QUEEN! March it forward, use your king to lead the way, and never stop pushing!',
+    demo: {
+      // White: Kd1, Pd7 — Black: Kf3 (pawn about to queen)
+      fen: '8/3P4/8/8/8/5k2/8/3K4 w - - 0 1',
+      highlight: ['d7', 'd8', 'd1'],
+      caption: 'The pawn is one step from becoming a queen! Push it forward and win!',
+    },
+    tutorial: {
+      fen: '8/3P4/8/8/8/5k2/8/3K4 w - - 0 1',
+      intro: {
+        text: "It is Scrapper -- and I am about to become QUEEN! In the endgame, pawns are the secret weapon. Push me forward!",
+        voice: 'tut-endgame-intro',
+      },
+      explain: {
+        text: 'When most pieces are gone, pawns rule! March your pawn to the other side of the board and it BECOMES A QUEEN. Use your king to protect it on the way!',
+        voice: 'tut-endgame-what',
+      },
+      demo: {
+        from: 'd7',
+        to: 'd8',
+        caption: 'The pawn reaches the end -- PROMOTION! It becomes a queen and wins the game!',
+        voice: 'tut-endgame-watch',
+      },
+      practice: {
+        prompt: 'Promote the pawn! Move it from d7 to d8!',
+        voice: 'tut-endgame-try',
+        from: 'd7',
+        to: 'd8',
+        success: 'QUEEN! You promoted the pawn! Now you have overwhelming power!',
+        successVoice: 'tut-endgame-yes',
+        nudge: 'Move the pawn one step forward from d7 to d8 to promote!',
+      },
+    },
+    starGoal: 3,
+    xpGoal: 6000,
+    starEventTypes: ['checkmate', 'win-material'],
+    levelIds: [25, 26, 27, 28, 29, 30],
+  },
 ];
 
 export function getChapter(id: number): Chapter {

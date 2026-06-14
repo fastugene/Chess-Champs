@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampArt } from '@/components/champs/ChampArt';
 import { resumeAudio } from '@/audio/sfx';
@@ -27,9 +27,30 @@ export default function Home() {
     router.push('/play');
   };
 
+  // Triple-tap the logo within 1.5 s → hidden parent dashboard.
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onLogoTap = () => {
+    tapCount.current += 1;
+    if (tapCount.current >= 3) {
+      tapCount.current = 0;
+      if (tapTimer.current) clearTimeout(tapTimer.current);
+      router.push('/parent');
+      return;
+    }
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 1500);
+  };
+
   return (
     <div className="home">
-      <div className="logo">
+      <div
+        className="logo"
+        onClick={onLogoTap}
+        role="button"
+        aria-label="Chess Champs"
+        style={{ cursor: 'default' }}
+      >
         CHESS
         <br />
         <span className="pop">CHAMPS</span>
@@ -52,6 +73,14 @@ export default function Home() {
 
       <button className="btn btn-primary btn-big" style={{ maxWidth: 320 }} onClick={play}>
         ▶ PLAY
+      </button>
+
+      <button
+        className="btn btn-ghost"
+        style={{ maxWidth: 320, width: '100%', fontSize: 16 }}
+        onClick={() => router.push('/campaign')}
+      >
+        📜 Campaign
       </button>
     </div>
   );
