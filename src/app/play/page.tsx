@@ -160,6 +160,8 @@ export default function PlayPage() {
       recordGameResult(gameResult),
     ]).then(([p]) => {
       setProgress(p);
+      // Advance levelId so HUD + chapter reflect the new level before recap shows.
+      if (p.currentLevel > levelId) setLevelId(p.currentLevel);
       // First game: queue the name-your-pawn modal to show AFTER recap is dismissed.
       if (!p.pawnCustomName && p.levelsCompleted.length === 1) {
         pendingNameModal.current = true;
@@ -285,7 +287,13 @@ export default function PlayPage() {
           onPlayAgain={() => {
             setRecap(null);
             if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
-            begin();
+            // If we advanced to a new chapter, show its lesson card first.
+            const nextChapterId = chapterForLevel(progress.currentLevel).id;
+            if (nextChapterId !== chapter.id) {
+              setPhase('lesson');
+            } else {
+              begin();
+            }
           }}
           onHome={() => {
             if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
