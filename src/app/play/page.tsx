@@ -30,7 +30,7 @@ import { BAND_ORDER } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { xpForEvents } from '@/chess/tactics/detect';
-import { crossedPawnMorph, type PawnForm, type GadgetId } from '@/progression/champs';
+import { crossedPawnMorph, pawnXpToLevel, type PawnForm, type GadgetId } from '@/progression/champs';
 import { speak } from '@/lib/speech';
 import { EvolveCutscene } from '@/components/champs/EvolveCutscene';
 import { NamePawnModal } from '@/components/onboarding/NamePawnModal';
@@ -51,8 +51,9 @@ export default function PlayPage() {
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
   const [recap, setRecap] = useState<RecapData | null>(null);
-  const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; power: number } | null>(null);
+  const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; pawnXp: number } | null>(null);
   const [showNameModal, setShowNameModal] = useState(false);
+  const pendingNameModal = useRef(false);
   const handledGameOver = useRef(false);
   const lastSeq = useRef(0);
   const bestEventRef = useRef<import('@/chess/tactics/detect').TacticEvent | null>(null);
@@ -90,6 +91,7 @@ export default function PlayPage() {
     handledGameOver.current = false;
     lastSeq.current = 0;
     bestEventRef.current = null;
+    pendingNameModal.current = false;
     // Use the auto-calibrated band so difficulty adapts to the son's skill.
     startGame({ playerColor: level.playerColor, band: progress.botBand, safety: safetyOn });
     setPhase('playing');
@@ -127,14 +129,13 @@ export default function PlayPage() {
       addStar: landed,
       xp: xpGain,
       champIds,
-    }).then(({ progress: p, champPowerBefore }) => {
+    }).then(({ progress: p, oldPawnXp }) => {
       setProgress(p);
       // Detect pawn morph threshold crossing → show EVOLVED! cutscene.
-      const oldPawnPower = champPowerBefore['pawn'];
-      const newPawnPower = p.champPower['pawn'];
-      if (oldPawnPower != null && newPawnPower != null && newPawnPower !== oldPawnPower) {
-        const morph = crossedPawnMorph(oldPawnPower, newPawnPower);
-        if (morph) setEvolve({ form: morph.form, gadgets: morph.gadgets, newGadget: morph.newGadget, power: newPawnPower });
+      const newPawnXp = p.pawnXp ?? 0;
+      if (newPawnXp !== oldPawnXp) {
+        const morph = crossedPawnMorph(oldPawnXp, newPawnXp);
+        if (morph) setEvolve({ form: morph.form, gadgets: morph.gadgets, newGadget: morph.newGadget, pawnXp: newPawnXp });
       }
     });
   }, [eventSeq, events, phase, chapter]);
@@ -159,9 +160,9 @@ export default function PlayPage() {
       recordGameResult(gameResult),
     ]).then(([p]) => {
       setProgress(p);
-      // First game: show the name-your-pawn modal after the recap if not named yet.
+      // First game: queue the name-your-pawn modal to show AFTER recap is dismissed.
       if (!p.pawnCustomName && p.levelsCompleted.length === 1) {
-        setShowNameModal(true);
+        pendingNameModal.current = true;
       }
       const ch = chapterForLevel(level.id);
       let chapterMastered = false;
@@ -272,19 +273,30 @@ export default function PlayPage() {
           form={evolve.form}
           gadgets={evolve.gadgets}
           newGadget={evolve.newGadget}
-          power={evolve.power}
+          pawnXp={evolve.pawnXp}
           pawnCustomName={progress.pawnCustomName}
           onDone={() => setEvolve(null)}
         />
       )}
 
       {recap && (
-        <RecapCard {...recap} onPlayAgain={begin} onHome={() => router.push('/')} />
+        <RecapCard
+          {...recap}
+          onPlayAgain={() => {
+            setRecap(null);
+            if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
+            begin();
+          }}
+          onHome={() => {
+            if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
+            router.push('/');
+          }}
+        />
       )}
 
       {showNameModal && (
         <NamePawnModal
-          power={progress.champPower['pawn'] ?? 1}
+          power={pawnXpToLevel(progress.pawnXp ?? 0)}
           onSave={async (name) => {
             const p = await setPawnCustomName(name);
             setProgress(p);

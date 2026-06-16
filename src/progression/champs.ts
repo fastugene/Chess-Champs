@@ -115,14 +115,41 @@ export interface PawnStage {
   gadgets: GadgetId[];
 }
 
-/** Maps power level 1-11 to the Pawn's current form + cumulative gadgets. */
-export function pawnStage(power: number): PawnStage {
-  const p = Math.max(1, Math.min(11, power));
-  if (p <= 2) return { form: 'pawn',   gadgets: [] };
-  if (p <= 4) return { form: 'pawn',   gadgets: ['buckler'] };
-  if (p <= 6) return { form: 'knight', gadgets: ['buckler', 'hooves'] };
-  if (p <= 8) return { form: 'bishop', gadgets: ['buckler', 'hooves', 'lance'] };
-  if (p <= 10) return { form: 'rook',  gadgets: ['buckler', 'hooves', 'lance', 'spear'] };
+/**
+ * Cumulative pawnXp needed to reach each power level (index i → power i+1).
+ * Calibrated so Queen form (power 11) is only reached near the end of the
+ * 30-level campaign (~90 games at ~2 win-material events/game = ~180 total).
+ *
+ * Morph targets: Buckler ≈ Ch1/2 boundary, Knight ≈ Ch3, Bishop ≈ Ch5,
+ * Rook ≈ Ch7, Queen ≈ Ch8 end.
+ */
+export const PAWN_THRESHOLDS: readonly number[] = [0, 18, 38, 58, 76, 94, 112, 130, 148, 166, 180];
+
+/** Returns the visual power level (1–11) from raw accumulated pawnXp. */
+export function pawnXpToLevel(xp: number): number {
+  for (let i = PAWN_THRESHOLDS.length - 1; i >= 0; i--) {
+    if (xp >= PAWN_THRESHOLDS[i]) return i + 1;
+  }
+  return 1;
+}
+
+/** Returns 0–1 progress within the current power level (for the XP bar fill). */
+export function pawnXpProgress(xp: number): number {
+  const level = pawnXpToLevel(xp);
+  if (level >= 11) return 1;
+  const start = PAWN_THRESHOLDS[level - 1];
+  const end = PAWN_THRESHOLDS[level];
+  return (xp - start) / (end - start);
+}
+
+/** Maps raw pawnXp to the Pawn's current form + cumulative gadgets. */
+export function pawnStage(xp: number): PawnStage {
+  const level = pawnXpToLevel(xp);
+  if (level <= 2) return { form: 'pawn',   gadgets: [] };
+  if (level <= 4) return { form: 'pawn',   gadgets: ['buckler'] };
+  if (level <= 6) return { form: 'knight', gadgets: ['buckler', 'hooves'] };
+  if (level <= 8) return { form: 'bishop', gadgets: ['buckler', 'hooves', 'lance'] };
+  if (level <= 10) return { form: 'rook',  gadgets: ['buckler', 'hooves', 'lance', 'spear'] };
   return { form: 'queen', gadgets: ['buckler', 'hooves', 'lance', 'spear', 'crown'] };
 }
 
@@ -135,12 +162,12 @@ const GADGET_NAME: Record<GadgetId, string> = {
 };
 
 /**
- * Returns the new PawnStage if crossing a morph threshold between oldPower and
- * newPower, otherwise null. Drives the EVOLVED! cutscene.
+ * Returns the new PawnStage if a morph threshold was crossed between oldXp and
+ * newXp (both raw pawnXp values), otherwise null. Drives the EVOLVED! cutscene.
  */
-export function crossedPawnMorph(oldPower: number, newPower: number): (PawnStage & { newGadget?: GadgetId }) | null {
-  const before = pawnStage(oldPower);
-  const after  = pawnStage(newPower);
+export function crossedPawnMorph(oldXp: number, newXp: number): (PawnStage & { newGadget?: GadgetId }) | null {
+  const before = pawnStage(oldXp);
+  const after  = pawnStage(newXp);
   if (before.form === after.form && before.gadgets.length === after.gadgets.length) return null;
   const newGadget = after.gadgets.find((g) => !before.gadgets.includes(g));
   return { ...after, newGadget };

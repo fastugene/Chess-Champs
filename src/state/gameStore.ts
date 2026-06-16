@@ -39,11 +39,19 @@ function streakVoice(n: number): string {
 /** Announcer line for a non-streak tactic event. Only called for major/epic. */
 function tacticVoice(event: import('@/chess/tactics/detect').TacticEvent): string {
   switch (event.type) {
-    case 'checkmate':  return 'Checkmate! You win!';
-    case 'fork':       return 'Fork! Two targets at once!';
+    case 'checkmate':        return 'Checkmate! You win!';
+    case 'fork':             return 'Fork! Two targets at once!';
+    case 'pin':              return 'Pin! That piece cannot move!';
+    case 'skewer':           return 'Skewer! Run and lose what is behind you!';
+    case 'discovered-attack': return 'Discovered attack! Hidden threat revealed!';
     case 'win-material':
-      return event.label === 'FREE KILL!' ? 'Free Kill!' : 'Worth it!';
-    default:           return '';
+      // Match piece-specific free-kill labels
+      if (event.label.startsWith('FREE QUEEN')) return 'Free Queen!';
+      if (event.label.startsWith('FREE ROOK'))  return 'Free Rook!';
+      if (event.label.startsWith('FREE BISHOP')) return 'Free Bishop!';
+      if (event.label.startsWith('FREE KNIGHT')) return 'Free Knight!';
+      return event.label === 'WORTH IT!' ? 'Worth it!' : 'Free Kill!';
+    default:                 return '';
   }
 }
 

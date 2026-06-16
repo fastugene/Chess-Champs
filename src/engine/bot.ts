@@ -17,7 +17,7 @@ import { BANDS, type Band } from './difficulty';
 export interface SimpleMove {
   from: string;
   to: string;
-  promotion?: string;
+  promotion?: 'q' | 'r' | 'b' | 'n';
 }
 
 /** Material balance from White's perspective, in centipawns-ish units. */
@@ -68,5 +68,5 @@ export function chooseBotMove(fen: string, band: Band): SimpleMove | null {
   scored.sort((a, b) => b.s - a.s);
   const k = Math.min(cfg.window, scored.length);
   const pick = scored[Math.floor(Math.random() * k)].m;
-  return { from: pick.from, to: pick.to, promotion: pick.promotion };
+  return { from: pick.from, to: pick.to, promotion: pick.promotion as SimpleMove['promotion'] };
 }
