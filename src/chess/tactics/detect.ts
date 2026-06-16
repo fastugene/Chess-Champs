@@ -22,6 +22,14 @@ import {
 
 export type RewardTier = 'micro' | 'minor' | 'major' | 'epic';
 
+/** Base XP per reward tier — the "XP orb" reward ladder (small wins → big wins). */
+const TIER_XP: Record<RewardTier, number> = {
+  micro: 5,    // a quiet capture / check
+  minor: 15,   // a free small piece / worth-it trade
+  major: 40,   // a real named tactic: fork, pin, skewer, discovery, big free kill
+  epic: 120,   // checkmate
+};
+
 export interface TacticEvent {
   type: 'capture' | 'win-material' | 'fork' | 'pin' | 'skewer' | 'discovered-attack' | 'check' | 'checkmate';
   tier: RewardTier;
@@ -142,6 +150,21 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
   }
 
   return events;
+}
+
+/**
+ * XP earned from a single detected event, scaled to its reward tier plus a
+ * small bonus for the material actually won. This is the "every good move gets
+ * love, sized to how good it is" ladder from the design doc — captures and
+ * tactics drip XP during play, not just at game-over.
+ */
+export function xpForEvent(event: TacticEvent): number {
+  return TIER_XP[event.tier] + (event.value ?? 0) * 2;
+}
+
+/** Total XP for a batch of events detected from one move. */
+export function xpForEvents(events: TacticEvent[]): number {
+  return events.reduce((sum, e) => sum + xpForEvent(e), 0);
 }
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ import { Celebration } from '@/components/celebrate/Celebration';
 import { getLevel } from '@/curriculum/levels';
 import { chapterForLevel, nextChapter } from '@/curriculum/chapters';
 import {
-  addStar,
+  awardPlayRewards,
   completeLevel,
   isChapterComplete,
   loadParentSettings,
@@ -28,6 +28,7 @@ import {
 import { BAND_ORDER } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
+import { xpForEvents } from '@/chess/tactics/detect';
 import { speak } from '@/lib/speech';
 
 type Phase = 'primer' | 'lesson' | 'playing';
@@ -105,9 +106,20 @@ export default function PlayPage() {
       if (!cur || (tierScore[e.type] ?? 0) > (tierScore[cur.type] ?? 0)) bestEventRef.current = e;
     }
 
+    // Reward ladder: every detected event drips scaled XP (small → big wins),
+    // and landing this chapter's tactic also earns a star. Both persist in one
+    // load/save so the HUD XP bar climbs live as he plays. Checkmate is excluded
+    // here — its reward is the game-over win bonus (avoids a double-count and a
+    // load/save race with the game-over effect on the same move).
+    const xpGain = xpForEvents(events.filter((e) => e.type !== 'checkmate'));
     const landed = events.some((e) => chapter.starEventTypes.includes(e.type));
-    if (!landed) return;
-    void addStar(chapter.id, chapter.starGoal).then(setProgress);
+    if (xpGain === 0 && !landed) return;
+    void awardPlayRewards({
+      chapterId: chapter.id,
+      starGoal: chapter.starGoal,
+      addStar: landed,
+      xp: xpGain,
+    }).then(setProgress);
   }, [eventSeq, events, phase, chapter]);
 
   // Detect end of game, persist XP/champ power, record result for auto-calibration.

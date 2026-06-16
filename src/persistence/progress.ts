@@ -133,6 +133,28 @@ export async function addStar(chapterId: number, starGoal: number): Promise<Prog
   return p;
 }
 
+/**
+ * Award in-play rewards from one move's detected events in a single load/save:
+ * always add the scaled XP, and add one star if the move landed this chapter's
+ * tactic (capped at the goal). Combining them avoids a load/save race between
+ * separate addXp + addStar calls firing on the same event.
+ */
+export async function awardPlayRewards(opts: {
+  chapterId: number;
+  starGoal: number;
+  addStar: boolean;
+  xp: number;
+}): Promise<Progress> {
+  const p = await loadProgress();
+  if (opts.xp > 0) p.xp += opts.xp;
+  if (opts.addStar) {
+    const current = p.chapterStars[opts.chapterId] ?? 0;
+    p.chapterStars[opts.chapterId] = Math.min(opts.starGoal, current + 1);
+  }
+  await saveProgress(p);
+  return p;
+}
+
 /** Mark a chapter's primer as seen so it doesn't auto-show again. */
 export async function markPrimerSeen(chapterId: number): Promise<Progress> {
   const p = await loadProgress();

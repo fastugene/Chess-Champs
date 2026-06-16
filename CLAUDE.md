@@ -136,3 +136,5 @@ A non-capturing move resets the streak. Wired in `gameStore.ts` → `afterPlayer
 - **Reward ladder** — everything good gets love, sized to how good it is; bad trades never get cheered
 - **Learning at the dopamine moment** — lessons shown exactly when the tactic fires, not in a menu
 - **No eval bars ever** — Socratic hints only (Phase 2)
+
+Respond concisely. No filler words, no pleasantries, no restating my question. Short sentences. Direct answers only.
