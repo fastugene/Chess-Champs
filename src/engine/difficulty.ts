@@ -34,10 +34,10 @@ export interface BotConfig {
 }
 
 export const BANDS: Record<Band, BotConfig> = {
-  rookie: { engine: 'minimax',   depth: 1, window: 6, blunderRate: 0.20 },
-  novice: { engine: 'minimax',   depth: 2, window: 5, blunderRate: 0.15 },
-  easy:   { engine: 'minimax',   depth: 2, window: 4, blunderRate: 0.12 },
-  medium: { engine: 'minimax',   depth: 3, window: 3, blunderRate: 0.08 },
+  rookie: { engine: 'minimax',   depth: 2, window: 6, blunderRate: 0.16 },
+  novice: { engine: 'minimax',   depth: 3, window: 5, blunderRate: 0.12 },
+  easy:   { engine: 'minimax',   depth: 3, window: 4, blunderRate: 0.096 },
+  medium: { engine: 'minimax',   depth: 4, window: 3, blunderRate: 0.064 },
   hard:   { engine: 'stockfish', depth: 4, window: 5, blunderRate: 0.10, elo: 1320 },
   insane: { engine: 'stockfish', depth: 4, window: 2, blunderRate: 0.05, elo: 1320 },
 };
