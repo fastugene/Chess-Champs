@@ -7,12 +7,15 @@ import { resumeAudio } from '@/audio/sfx';
 import { unlockSpeech } from '@/audio/speech';
 import { loadProgress } from '@/persistence/progress';
 import { getRank } from '@/progression/ranks';
+import { getChampDisplayName } from '@/progression/champs';
 
 export default function Home() {
   const router = useRouter();
   const [rankDisplay, setRankDisplay] = useState('Wood III');
   const [rankBadge, setRankBadge] = useState('🪵');
   const [rankColor, setRankColor] = useState('#a07850');
+  const [pawnPower, setPawnPower] = useState(1);
+  const [pawnCustomName, setPawnCustomName] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     void loadProgress().then((p) => {
@@ -20,6 +23,8 @@ export default function Home() {
       setRankDisplay(rank.displayName);
       setRankBadge(rank.tier.badge);
       setRankColor(rank.tier.color);
+      setPawnPower(p.champPower['pawn'] ?? 1);
+      setPawnCustomName(p.pawnCustomName);
     });
   }, []);
 
@@ -66,10 +71,13 @@ export default function Home() {
       </div>
 
       <div className="home-champs">
-        <ChampArt champId="pawn" size={86} />
+        <ChampArt champId="pawn" size={86} power={pawnPower} />
         <ChampArt champId="knight" size={108} />
         <ChampArt champId="queen" size={86} />
       </div>
+      {pawnCustomName && (
+        <div className="pawn-name-tag">{pawnCustomName} · Lv {pawnPower}</div>
+      )}
 
       <div className="tagline">Collect Champs. Climb the ranks. Become a chess legend!</div>
 
@@ -84,6 +92,13 @@ export default function Home() {
           onClick={() => router.push('/campaign')}
         >
           📜 Campaign
+        </button>
+        <button
+          className="btn btn-ghost"
+          style={{ flex: 1, fontSize: 16 }}
+          onClick={() => router.push('/squad')}
+        >
+          🛡️ Squad
         </button>
         <button
           className="btn btn-ghost"

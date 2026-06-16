@@ -43,6 +43,8 @@ export interface Progress {
   rankTier: string;
   /** Division within the tier (3 = lowest, 1 = highest). */
   rankDivision: number;
+  /** Optional custom name for the Pawn champ (set by the son). */
+  pawnCustomName?: string;
 }
 
 export const DEFAULT_PROGRESS: Progress = {
@@ -135,22 +137,44 @@ export async function addStar(chapterId: number, starGoal: number): Promise<Prog
 
 /**
  * Award in-play rewards from one move's detected events in a single load/save:
- * always add the scaled XP, and add one star if the move landed this chapter's
- * tactic (capped at the goal). Combining them avoids a load/save race between
- * separate addXp + addStar calls firing on the same event.
+ * always add the scaled XP, add one star if the move landed this chapter's
+ * tactic (capped at the goal), and power up each champ whose tactic fired.
+ * Combining them avoids a load/save race between separate calls on the same event.
  */
 export async function awardPlayRewards(opts: {
   chapterId: number;
   starGoal: number;
   addStar: boolean;
   xp: number;
-}): Promise<Progress> {
+  champIds?: string[];
+}): Promise<{ progress: Progress; champPowerBefore: Record<string, number> }> {
   const p = await loadProgress();
+  const champPowerBefore: Record<string, number> = {};
   if (opts.xp > 0) p.xp += opts.xp;
   if (opts.addStar) {
     const current = p.chapterStars[opts.chapterId] ?? 0;
     p.chapterStars[opts.chapterId] = Math.min(opts.starGoal, current + 1);
   }
+  for (const id of opts.champIds ?? []) {
+    champPowerBefore[id] = p.champPower[id] ?? 1;
+    p.champPower[id] = Math.min(11, (p.champPower[id] ?? 1) + 1);
+  }
+  await saveProgress(p);
+  return { progress: p, champPowerBefore };
+}
+
+/** Power up a single champ. Returns new progress. */
+export async function powerUpChamp(champId: string): Promise<Progress> {
+  const p = await loadProgress();
+  p.champPower[champId] = Math.min(11, (p.champPower[champId] ?? 1) + 1);
+  await saveProgress(p);
+  return p;
+}
+
+/** Set the son's custom name for his Pawn champ (trimmed, max 20 chars). */
+export async function setPawnCustomName(name: string): Promise<Progress> {
+  const p = await loadProgress();
+  p.pawnCustomName = name.trim().slice(0, 20) || undefined;
   await saveProgress(p);
   return p;
 }

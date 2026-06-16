@@ -1012,3 +1012,214 @@ body {
   .board-wrap, .home-champs, .rank-badge-home, .hud,
   .chapter-node, .comic-panel { animation: none; }
 }
+
+/* ── Mega free-kill celebration ───────────────────────────────────────────── */
+.celebrate.mega-kill .burst.burst-mega {
+  animation: mega-slam 1.6s cubic-bezier(0.15, 1.6, 0.3, 1) forwards;
+}
+.celebrate.mega-kill .headline {
+  font-size: clamp(40px, 14vw, 72px);
+  color: #ff5d73;
+  text-shadow: 0 5px 0 #991122, 0 0 32px rgba(255, 93, 115, 0.7);
+}
+@keyframes mega-slam {
+  0%  { transform: scale(0.1) rotate(-10deg); opacity: 0; }
+  16% { transform: scale(1.35) rotate(3deg);  opacity: 1; }
+  24% { transform: scale(0.88); }
+  32% { transform: scale(1.12); }
+  40%, 80% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.06) translateY(-14px); opacity: 0; }
+}
+.mega-glyph-fly {
+  position: fixed;
+  font-size: 80px;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: glyph-fly 1.5s ease-out forwards;
+  pointer-events: none;
+  z-index: 61;
+}
+@keyframes glyph-fly {
+  0%   { transform: translateX(-50%) scale(0.5) rotate(-20deg); opacity: 0; }
+  20%  { transform: translateX(-50%) scale(1.4) rotate(8deg);   opacity: 1; }
+  60%  { transform: translateX(-150%) scale(1.1) rotate(-5deg); opacity: 1; }
+  100% { transform: translateX(-200%) scale(0.8);               opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mega-glyph-fly { animation: none; display: none; }
+}
+
+/* ── EVOLVED! cutscene ────────────────────────────────────────────────────── */
+.evolve-overlay {
+  z-index: 80;
+  background: rgba(4, 6, 18, 0.92);
+}
+.evolve-cutscene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 20px 32px;
+  text-align: center;
+  animation: evolve-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+@keyframes evolve-in {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.evolve-burst {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(47,134,255,0.3) 0%, transparent 70%);
+  animation: evolve-burst 0.8s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes evolve-burst {
+  from { transform: scale(0.3); opacity: 1; }
+  to   { transform: scale(3);   opacity: 0; }
+}
+.evolve-label {
+  font-size: clamp(40px, 14vw, 72px);
+  font-weight: 900;
+  color: #2f86ff;
+  text-shadow: 0 4px 0 #1050aa, 0 0 32px rgba(47,134,255,0.8);
+  letter-spacing: -1px;
+}
+.evolve-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+}
+.evolve-power {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--gold);
+}
+.evolve-gadget {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(47,134,255,0.15);
+  border: 1px solid rgba(47,134,255,0.4);
+  border-radius: 12px;
+  padding: 8px 20px;
+}
+.evolve-gadget-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #7ab0ff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.evolve-gadget-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+}
+.evolve-form-change {
+  font-size: 15px;
+  font-weight: 700;
+  color: #aeb4dd;
+  max-width: 260px;
+}
+.evolve-tap {
+  font-size: 13px;
+  color: #5a6090;
+  margin-top: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .evolve-cutscene, .evolve-burst { animation: none; }
+}
+
+/* ── Name Pawn modal ──────────────────────────────────────────────────────── */
+.name-pawn-modal {
+  max-width: 340px;
+  width: calc(100% - 32px);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.name-input {
+  width: 100%;
+  background: #1a1f40;
+  border: 2px solid #3a4070;
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 18px;
+  font-family: inherit;
+  font-weight: 700;
+  padding: 12px 16px;
+  outline: none;
+  text-align: center;
+}
+.name-input:focus { border-color: #2f86ff; }
+.pawn-name-tag {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7ab0ff;
+  margin-top: -6px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Squad page ───────────────────────────────────────────────────────────── */
+.squad-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 16px 40px;
+  min-height: 100dvh;
+  gap: 12px;
+}
+.squad-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 480px;
+}
+.squad-title {
+  font-size: 26px;
+  font-weight: 900;
+  margin: 0;
+  flex: 1;
+}
+.squad-sub {
+  margin: 0;
+  font-size: 13px;
+}
+.squad-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 480px;
+}
+.champ-locked {
+  opacity: 0.55;
+  filter: grayscale(0.6);
+}
+.lock-overlay {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 20px;
+}
+.champ-secret {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border: 2px dashed #3a4070;
+  border-radius: 16px;
+}
+.secret-glyph {
+  font-size: 48px;
+  font-weight: 900;
+  color: #3a4070;
+  line-height: 1;
+  padding: 12px;
+}

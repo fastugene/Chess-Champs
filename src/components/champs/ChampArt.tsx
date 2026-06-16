@@ -1,4 +1,4 @@
-import { CHAMPS } from '@/progression/champs';
+import { CHAMPS, pawnStage } from '@/progression/champs';
 
 /**
  * Champ art — the chess piece IS the character.
@@ -15,10 +15,13 @@ export function ChampArt({
   champId,
   size = 120,
   showGlow = true,
+  power,
 }: {
   champId: string;
   size?: number;
   showGlow?: boolean;
+  /** Champ power level 1-11. Drives Pawn's morph journey + gadget stacking. */
+  power?: number;
 }) {
   const champ = CHAMPS[champId];
   const color = champ?.color ?? '#2f86ff';
@@ -26,7 +29,12 @@ export function ChampArt({
   const light = shade(color, 0.32);
   const foot = shade(color, -0.52);
   const outline = '#14172e';
-  const gid = `glow-${champId}`;
+  const gid = `glow-${champId}-${power ?? 0}`;
+  const glowOpacity = power != null ? Math.min(0.85, 0.35 + (power / 11) * 0.5) : 0.55;
+
+  // For the pawn champ, morph through forms based on power level.
+  const stage = champId === 'pawn' && power != null ? pawnStage(power) : null;
+  const effectiveForm = stage?.form ?? champId;
 
   return (
     <svg
@@ -38,25 +46,45 @@ export function ChampArt({
     >
       <defs>
         <radialGradient id={gid} cx="50%" cy="45%" r="55%">
-          <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+          <stop offset="0%" stopColor={color} stopOpacity={glowOpacity} />
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </radialGradient>
       </defs>
 
       {showGlow && <circle cx="80" cy="84" r="78" fill={`url(#${gid})`} />}
 
-      {champId === 'knight' ? (
+      {effectiveForm === 'knight' ? (
         <Knight color={color} dark={dark} light={light} foot={foot} outline={outline} />
-      ) : champId === 'queen' ? (
+      ) : effectiveForm === 'queen' ? (
         <Queen color={color} dark={dark} light={light} foot={foot} outline={outline} />
-      ) : champId === 'bishop' ? (
+      ) : effectiveForm === 'bishop' ? (
         <Bishop color={color} dark={dark} light={light} foot={foot} outline={outline} />
-      ) : champId === 'rook' ? (
+      ) : effectiveForm === 'rook' ? (
         <Rook color={color} dark={dark} light={light} foot={foot} outline={outline} />
       ) : champId === 'unseen' ? (
         <Unseen color={color} dark={dark} foot={foot} outline={outline} />
       ) : (
         <Pawn color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      )}
+
+      {/* Gadget overlays for the pawn's promotion journey */}
+      {stage?.gadgets.includes('buckler') && (
+        <GadgetBuckler color={color} dark={dark} outline={outline} form={stage.form} />
+      )}
+      {stage?.gadgets.includes('hooves') && (
+        <GadgetHooves color={color} dark={dark} />
+      )}
+      {stage?.gadgets.includes('lance') && (
+        <GadgetLance color={color} dark={dark} outline={outline} />
+      )}
+      {stage?.gadgets.includes('spear') && (
+        <GadgetSpear color={color} dark={dark} outline={outline} />
+      )}
+      {/* Crown is the Queen's intrinsic crown, already drawn in Queen form */}
+
+      {/* High-power accent for non-pawn champs */}
+      {champId !== 'pawn' && power != null && power >= 8 && (
+        <CrownAccent color={color} dark={dark} />
       )}
     </svg>
   );
@@ -259,6 +287,64 @@ function CoolFace({ cx, cy, s, outline }: { cx: number; cy: number; s: number; o
         fill="none"
         strokeLinecap="round"
       />
+    </g>
+  );
+}
+
+// ── Gadget overlays for the Pawn's promotion journey ─────────────────────────
+
+function GadgetBuckler({ color, dark, outline, form }: { color: string; dark: string; outline: string; form: string }) {
+  // Shield sits on the back/left side — position shifts slightly per form
+  const y = form === 'pawn' ? 98 : form === 'knight' ? 90 : 100;
+  return (
+    <g opacity="0.92">
+      <ellipse cx="38" cy={y} rx="13" ry="16" fill={dark} stroke={outline} strokeWidth="1.5" />
+      <ellipse cx="38" cy={y} rx="9" ry="12" fill={color} />
+      <line x1="38" y1={y - 11} x2="38" y2={y + 11} stroke={dark} strokeWidth="1.5" />
+      <line x1="29" y1={y} x2="47" y2={y} stroke={dark} strokeWidth="1.5" />
+    </g>
+  );
+}
+
+function GadgetHooves({ color, dark }: { color: string; dark: string }) {
+  // Twin hooves at the base flanks
+  return (
+    <g opacity="0.88">
+      <ellipse cx="50" cy="162" rx="9" ry="5" fill={dark} />
+      <ellipse cx="110" cy="162" rx="9" ry="5" fill={dark} />
+      <ellipse cx="50" cy="159" rx="7" ry="4" fill={color} />
+      <ellipse cx="110" cy="159" rx="7" ry="4" fill={color} />
+    </g>
+  );
+}
+
+function GadgetLance({ color, dark, outline }: { color: string; dark: string; outline: string }) {
+  // Diagonal lance pointing upper-right
+  return (
+    <g opacity="0.88">
+      <line x1="112" y1="130" x2="134" y2="42" stroke={dark} strokeWidth="5" strokeLinecap="round" />
+      <line x1="112" y1="130" x2="134" y2="42" stroke={color} strokeWidth="3" strokeLinecap="round" />
+      <polygon points="134,42 128,52 140,50" fill={color} stroke={outline} strokeWidth="1" />
+    </g>
+  );
+}
+
+function GadgetSpear({ color, dark, outline }: { color: string; dark: string; outline: string }) {
+  // Vertical spear on the right
+  return (
+    <g opacity="0.88">
+      <line x1="122" y1="160" x2="122" y2="30" stroke={dark} strokeWidth="5" strokeLinecap="round" />
+      <line x1="122" y1="160" x2="122" y2="30" stroke={color} strokeWidth="3" strokeLinecap="round" />
+      <polygon points="122,30 116,44 128,44" fill={color} stroke={outline} strokeWidth="1" />
+    </g>
+  );
+}
+
+function CrownAccent({ color, dark }: { color: string; dark: string }) {
+  // Small crown nub at the top for non-pawn champs at high power
+  return (
+    <g opacity="0.7">
+      <circle cx="80" cy="10" r="4" fill={color} stroke={dark} strokeWidth="1" />
     </g>
   );
 }

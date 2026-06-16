@@ -10,7 +10,7 @@
  *
  * Phase 2 adds: pin, skewer, and discovered-attack detectors.
  */
-import { Chess, type Color, type Move } from 'chess.js';
+import { Chess, type Color, type Move, type PieceSymbol } from 'chess.js';
 import {
   PIECE_VALUE,
   attackedSquares,
@@ -41,6 +41,8 @@ export interface TacticEvent {
   champId?: string;
   /** Material gained, for XP. */
   value?: number;
+  /** The piece symbol of the captured piece (for mega animation). */
+  captured?: PieceSymbol;
 }
 
 /**
@@ -75,13 +77,15 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
     const canBeRecaptured = isAttackedBy(grid, f, r, enemy);
 
     if (!canBeRecaptured && gained >= 1) {
+      const freeLabel = freeKillLabel(move.captured!);
       events.push({
         type: 'win-material',
         tier: gained >= 3 ? 'major' : 'minor',
-        label: 'FREE KILL!',
+        label: freeLabel,
         sub: `+${gained}`,
         value: gained,
         champId: 'pawn',
+        captured: move.captured,
       });
     } else if (gained > attackerVal) {
       events.push({
@@ -91,9 +95,10 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
         sub: `+${gained - attackerVal}`,
         value: gained - attackerVal,
         champId: 'pawn',
+        captured: move.captured,
       });
     } else {
-      events.push({ type: 'capture', tier: 'micro', label: 'Kill!', sub: `+${gained}` });
+      events.push({ type: 'capture', tier: 'micro', label: 'Kill!', sub: `+${gained}`, captured: move.captured });
     }
   }
 
@@ -385,4 +390,15 @@ function getSlideDirections(pieceType: string): Dir[] {
   if (pieceType === 'r') return [[-1,0],[1,0],[0,-1],[0,1]];
   // queen = both
   return [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
+}
+
+const FREE_KILL_LABEL: Partial<Record<PieceSymbol, string>> = {
+  q: 'FREE QUEEN!',
+  r: 'FREE ROOK!',
+  b: 'FREE BISHOP!',
+  n: 'FREE KNIGHT!',
+};
+
+function freeKillLabel(piece: PieceSymbol): string {
+  return FREE_KILL_LABEL[piece] ?? 'FREE KILL!';
 }

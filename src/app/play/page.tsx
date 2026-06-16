@@ -20,6 +20,7 @@ import {
   markChapterMastered,
   markPrimerSeen,
   recordGameResult,
+  setPawnCustomName,
   starsFor,
   unlockChapter,
   DEFAULT_PROGRESS,
@@ -29,7 +30,10 @@ import { BAND_ORDER } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { xpForEvents } from '@/chess/tactics/detect';
+import { crossedPawnMorph, type PawnForm, type GadgetId } from '@/progression/champs';
 import { speak } from '@/lib/speech';
+import { EvolveCutscene } from '@/components/champs/EvolveCutscene';
+import { NamePawnModal } from '@/components/onboarding/NamePawnModal';
 
 type Phase = 'primer' | 'lesson' | 'playing';
 
@@ -47,6 +51,8 @@ export default function PlayPage() {
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
   const [recap, setRecap] = useState<RecapData | null>(null);
+  const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; power: number } | null>(null);
+  const [showNameModal, setShowNameModal] = useState(false);
   const handledGameOver = useRef(false);
   const lastSeq = useRef(0);
   const bestEventRef = useRef<import('@/chess/tactics/detect').TacticEvent | null>(null);
@@ -107,19 +113,30 @@ export default function PlayPage() {
     }
 
     // Reward ladder: every detected event drips scaled XP (small → big wins),
-    // and landing this chapter's tactic also earns a star. Both persist in one
-    // load/save so the HUD XP bar climbs live as he plays. Checkmate is excluded
-    // here — its reward is the game-over win bonus (avoids a double-count and a
-    // load/save race with the game-over effect on the same move).
-    const xpGain = xpForEvents(events.filter((e) => e.type !== 'checkmate'));
+    // powers up the matching Champ, and landing this chapter's tactic earns a star.
+    // Checkmate is excluded here — its reward is the game-over win bonus.
+    const nonMate = events.filter((e) => e.type !== 'checkmate');
+    const xpGain = xpForEvents(nonMate);
     const landed = events.some((e) => chapter.starEventTypes.includes(e.type));
-    if (xpGain === 0 && !landed) return;
+    // Collect distinct champIds from this move's events (deduped).
+    const champIds = [...new Set(nonMate.map((e) => e.champId).filter(Boolean) as string[])];
+    if (xpGain === 0 && !landed && champIds.length === 0) return;
     void awardPlayRewards({
       chapterId: chapter.id,
       starGoal: chapter.starGoal,
       addStar: landed,
       xp: xpGain,
-    }).then(setProgress);
+      champIds,
+    }).then(({ progress: p, champPowerBefore }) => {
+      setProgress(p);
+      // Detect pawn morph threshold crossing → show EVOLVED! cutscene.
+      const oldPawnPower = champPowerBefore['pawn'];
+      const newPawnPower = p.champPower['pawn'];
+      if (oldPawnPower != null && newPawnPower != null && newPawnPower !== oldPawnPower) {
+        const morph = crossedPawnMorph(oldPawnPower, newPawnPower);
+        if (morph) setEvolve({ form: morph.form, gadgets: morph.gadgets, newGadget: morph.newGadget, power: newPawnPower });
+      }
+    });
   }, [eventSeq, events, phase, chapter]);
 
   // Detect end of game, persist XP/champ power, record result for auto-calibration.
@@ -131,6 +148,8 @@ export default function PlayPage() {
     const result: RecapData['result'] =
       status === 'checkmate' ? (winner === playerColor ? 'win' : 'lose') : 'draw';
     const xp = result === 'win' ? 100 : result === 'draw' ? 40 : 25;
+    // Queen powers up on wins (checkmate champId flows through the event system,
+    // but we also bump it here for the recap card's CHAMP POWERED UP panel).
     const championId = result === 'win' ? 'queen' : undefined;
 
     const gameResult = result === 'lose' ? 'loss' : result;
@@ -140,6 +159,10 @@ export default function PlayPage() {
       recordGameResult(gameResult),
     ]).then(([p]) => {
       setProgress(p);
+      // First game: show the name-your-pawn modal after the recap if not named yet.
+      if (!p.pawnCustomName && p.levelsCompleted.length === 1) {
+        setShowNameModal(true);
+      }
       const ch = chapterForLevel(level.id);
       let chapterMastered = false;
       if (isChapterComplete(p, ch) && !p.chaptersMastered.includes(ch.id)) {
@@ -158,6 +181,7 @@ export default function PlayPage() {
         chapterXp: p.xp,
         chapterMastered,
         topEvent: bestEventRef.current ?? undefined,
+        pawnCustomName: p.pawnCustomName,
       });
     });
   }, [status, phase, winner, playerColor, level.id]);
@@ -243,8 +267,31 @@ export default function PlayPage() {
         />
       )}
 
+      {evolve && (
+        <EvolveCutscene
+          form={evolve.form}
+          gadgets={evolve.gadgets}
+          newGadget={evolve.newGadget}
+          power={evolve.power}
+          pawnCustomName={progress.pawnCustomName}
+          onDone={() => setEvolve(null)}
+        />
+      )}
+
       {recap && (
         <RecapCard {...recap} onPlayAgain={begin} onHome={() => router.push('/')} />
+      )}
+
+      {showNameModal && (
+        <NamePawnModal
+          power={progress.champPower['pawn'] ?? 1}
+          onSave={async (name) => {
+            const p = await setPawnCustomName(name);
+            setProgress(p);
+            setShowNameModal(false);
+          }}
+          onSkip={() => setShowNameModal(false)}
+        />
       )}
     </>
   );

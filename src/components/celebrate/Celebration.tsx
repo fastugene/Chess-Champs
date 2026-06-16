@@ -6,6 +6,10 @@ import { ChampArt } from '@/components/champs/ChampArt';
 import { CHAMPS } from '@/progression/champs';
 import type { RewardTier, TacticEvent } from '@/chess/tactics/detect';
 
+const PIECE_GLYPH: Record<string, string> = {
+  q: '♛', r: '♜', b: '♝', n: '♞', p: '♟', k: '♚',
+};
+
 const TIER_RANK: Record<RewardTier, number> = { micro: 0, minor: 1, major: 2, epic: 3 };
 const CONFETTI_COLORS = ['#ffc93c', '#4fd675', '#7c9cff', '#ff5d73', '#b06bff', '#5ad1e6'];
 
@@ -36,12 +40,19 @@ export function Celebration() {
   const big = current.tier === 'major' || current.tier === 'epic';
   const isStreak = streak >= 2;
   const tier = Math.min(streak, 6);
+  const isMegaKill = current.type === 'win-material' && (current.value ?? 0) >= 3;
+  const capturedGlyph = current.captured ? PIECE_GLYPH[current.captured] : null;
 
   return (
-    <div className={`celebrate${isStreak ? ` shake-${tier}` : ''}`}>
-      {isStreak && <div className="streak-flash" />}
-      {(big || isStreak) && <Confetti count={isStreak ? 18 + tier * 6 : 26} />}
-      <div className={`burst${isStreak ? ' burst-streak' : ''}`}>
+    <div className={`celebrate${isStreak ? ` shake-${tier}` : ''}${isMegaKill ? ' mega-kill' : ''}`}>
+      {(isStreak || isMegaKill) && <div className="streak-flash" />}
+      {(big || isStreak || isMegaKill) && (
+        <Confetti count={isMegaKill ? 40 : isStreak ? 18 + tier * 6 : 26} />
+      )}
+      {isMegaKill && capturedGlyph && (
+        <div className="mega-glyph-fly">{capturedGlyph}</div>
+      )}
+      <div className={`burst${isStreak ? ' burst-streak' : ''}${isMegaKill ? ' burst-mega' : ''}`}>
         <div className="headline">{current.label}</div>
         {isStreak && <div className="combo">×{streak}</div>}
         {current.sub && !isStreak && <div className="sub">{current.sub}</div>}

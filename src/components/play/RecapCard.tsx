@@ -16,6 +16,8 @@ export interface RecapData {
   chapterMastered?: boolean;
   /** Best tactic fired this game, for the shining-moment panel. */
   topEvent?: TacticEvent;
+  /** Son's custom pawn name, if set. */
+  pawnCustomName?: string;
 }
 
 const TIPS: Record<number, string> = {
@@ -38,6 +40,7 @@ export function RecapCard({
   chapterXp,
   chapterMastered,
   topEvent,
+  pawnCustomName,
   onPlayAgain,
   onHome,
 }: RecapData & { onPlayAgain: () => void; onHome: () => void }) {
@@ -74,7 +77,12 @@ export function RecapCard({
             {championId && (
               <div className="powerup-stage" style={{ marginTop: 8 }}>
                 <div className="level-up">⚡ CHAMP POWERED UP! ⚡</div>
-                <ChampCard champId={championId} size={88} power={championPower ?? 1} />
+                <ChampCard
+                  champId={championId}
+                  size={88}
+                  power={championPower ?? 1}
+                  pawnCustomName={pawnCustomName}
+                />
               </div>
             )}
           </div>

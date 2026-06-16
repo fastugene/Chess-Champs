@@ -100,3 +100,52 @@ export const CHAMPS: Record<string, Champ> = {
 export function getChamp(id: string): Champ | undefined {
   return CHAMPS[id];
 }
+
+/** Display name for a champ, respecting the son's custom Pawn name if set. */
+export function getChampDisplayName(champId: string, pawnCustomName?: string): string {
+  if (champId === 'pawn' && pawnCustomName) return pawnCustomName;
+  return CHAMPS[champId]?.name ?? champId;
+}
+
+export type PawnForm = 'pawn' | 'knight' | 'bishop' | 'rook' | 'queen';
+export type GadgetId = 'buckler' | 'hooves' | 'lance' | 'spear' | 'crown';
+
+export interface PawnStage {
+  form: PawnForm;
+  gadgets: GadgetId[];
+}
+
+/** Maps power level 1-11 to the Pawn's current form + cumulative gadgets. */
+export function pawnStage(power: number): PawnStage {
+  const p = Math.max(1, Math.min(11, power));
+  if (p <= 2) return { form: 'pawn',   gadgets: [] };
+  if (p <= 4) return { form: 'pawn',   gadgets: ['buckler'] };
+  if (p <= 6) return { form: 'knight', gadgets: ['buckler', 'hooves'] };
+  if (p <= 8) return { form: 'bishop', gadgets: ['buckler', 'hooves', 'lance'] };
+  if (p <= 10) return { form: 'rook',  gadgets: ['buckler', 'hooves', 'lance', 'spear'] };
+  return { form: 'queen', gadgets: ['buckler', 'hooves', 'lance', 'spear', 'crown'] };
+}
+
+const GADGET_NAME: Record<GadgetId, string> = {
+  buckler: 'Battle Buckler',
+  hooves:  'Twin Hooves',
+  lance:   'Diagonal Lance',
+  spear:   'Tower Spear',
+  crown:   'Royal Crown',
+};
+
+/**
+ * Returns the new PawnStage if crossing a morph threshold between oldPower and
+ * newPower, otherwise null. Drives the EVOLVED! cutscene.
+ */
+export function crossedPawnMorph(oldPower: number, newPower: number): (PawnStage & { newGadget?: GadgetId }) | null {
+  const before = pawnStage(oldPower);
+  const after  = pawnStage(newPower);
+  if (before.form === after.form && before.gadgets.length === after.gadgets.length) return null;
+  const newGadget = after.gadgets.find((g) => !before.gadgets.includes(g));
+  return { ...after, newGadget };
+}
+
+export function gadgetName(id: GadgetId): string {
+  return GADGET_NAME[id];
+}
