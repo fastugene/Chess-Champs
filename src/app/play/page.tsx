@@ -30,7 +30,7 @@ import { BAND_ORDER } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { xpForEvents } from '@/chess/tactics/detect';
-import { crossedPawnMorph, type PawnForm, type GadgetId } from '@/progression/champs';
+import { crossedPawnMorph, pawnXpToLevel, type PawnForm, type GadgetId } from '@/progression/champs';
 import { speak } from '@/lib/speech';
 import { EvolveCutscene } from '@/components/champs/EvolveCutscene';
 import { NamePawnModal } from '@/components/onboarding/NamePawnModal';
@@ -51,7 +51,7 @@ export default function PlayPage() {
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
   const [recap, setRecap] = useState<RecapData | null>(null);
-  const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; power: number } | null>(null);
+  const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; pawnXp: number } | null>(null);
   const [showNameModal, setShowNameModal] = useState(false);
   const pendingNameModal = useRef(false);
   const handledGameOver = useRef(false);
@@ -129,14 +129,13 @@ export default function PlayPage() {
       addStar: landed,
       xp: xpGain,
       champIds,
-    }).then(({ progress: p, champPowerBefore }) => {
+    }).then(({ progress: p, oldPawnXp }) => {
       setProgress(p);
       // Detect pawn morph threshold crossing → show EVOLVED! cutscene.
-      const oldPawnPower = champPowerBefore['pawn'];
-      const newPawnPower = p.champPower['pawn'];
-      if (oldPawnPower != null && newPawnPower != null && newPawnPower !== oldPawnPower) {
-        const morph = crossedPawnMorph(oldPawnPower, newPawnPower);
-        if (morph) setEvolve({ form: morph.form, gadgets: morph.gadgets, newGadget: morph.newGadget, power: newPawnPower });
+      const newPawnXp = p.pawnXp ?? 0;
+      if (newPawnXp !== oldPawnXp) {
+        const morph = crossedPawnMorph(oldPawnXp, newPawnXp);
+        if (morph) setEvolve({ form: morph.form, gadgets: morph.gadgets, newGadget: morph.newGadget, pawnXp: newPawnXp });
       }
     });
   }, [eventSeq, events, phase, chapter]);
@@ -274,7 +273,7 @@ export default function PlayPage() {
           form={evolve.form}
           gadgets={evolve.gadgets}
           newGadget={evolve.newGadget}
-          power={evolve.power}
+          pawnXp={evolve.pawnXp}
           pawnCustomName={progress.pawnCustomName}
           onDone={() => setEvolve(null)}
         />
@@ -297,7 +296,7 @@ export default function PlayPage() {
 
       {showNameModal && (
         <NamePawnModal
-          power={progress.champPower['pawn'] ?? 1}
+          power={pawnXpToLevel(progress.pawnXp ?? 0)}
           onSave={async (name) => {
             const p = await setPawnCustomName(name);
             setProgress(p);

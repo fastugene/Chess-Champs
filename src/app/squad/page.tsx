@@ -18,7 +18,8 @@ export default function SquadPage() {
     void loadProgress().then(setProgress);
   }, []);
 
-  const unlockedIds = new Set(Object.keys(progress.champPower));
+  // Pawn is the starter champ — always unlocked, tracked via pawnXp not champPower.
+  const unlockedIds = new Set(['pawn', ...Object.keys(progress.champPower)]);
   const unseenUnlocked = unlockedIds.has('unseen');
 
   return (
@@ -45,13 +46,13 @@ export default function SquadPage() {
             );
           }
           const locked = !unlockedIds.has(id);
-          const power = progress.champPower[id] ?? 1;
           return (
             <ChampCard
               key={id}
               champId={id}
               size={100}
-              power={locked ? undefined : power}
+              power={locked ? undefined : (id === 'pawn' ? undefined : (progress.champPower[id] ?? 1))}
+              pawnXp={id === 'pawn' && !locked ? (progress.pawnXp ?? 0) : undefined}
               pawnCustomName={progress.pawnCustomName}
               locked={locked}
             />

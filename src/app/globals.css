@@ -1164,6 +1164,14 @@ body {
   letter-spacing: 0.3px;
 }
 
+/* ── Pawn long-form XP bar ────────────────────────────────────────────────── */
+.pawn-xp-bar { width: 100%; margin-top: 6px; }
+.pawn-xp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.pawn-xp-level { font-size: 11px; font-weight: 900; color: #2f86ff; letter-spacing: 0.3px; }
+.pawn-xp-next { font-size: 10px; color: var(--muted); }
+.pawn-xp-track { width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.pawn-xp-fill { height: 100%; background: linear-gradient(90deg, #2f86ff, #7ab0ff); border-radius: 3px; transition: width 0.4s ease; }
+
 /* ── Squad page ───────────────────────────────────────────────────────────── */
 .squad-page {
   display: flex;

@@ -45,6 +45,12 @@ export interface Progress {
   rankDivision: number;
   /** Optional custom name for the Pawn champ (set by the son). */
   pawnCustomName?: string;
+  /**
+   * Raw XP counter for the Pawn's promotion journey (separate from main XP).
+   * +1 per win-material event. Calibrated so Queen form is only reached near
+   * the end of the 30-level campaign (~180 total events across ~90 games).
+   */
+  pawnXp: number;
 }
 
 export const DEFAULT_PROGRESS: Progress = {
@@ -61,6 +67,7 @@ export const DEFAULT_PROGRESS: Progress = {
   consecutiveWins: 0,
   rankTier: 'wood',
   rankDivision: 3,
+  pawnXp: 0,
 };
 
 export async function loadProgress(): Promise<Progress> {
@@ -147,20 +154,26 @@ export async function awardPlayRewards(opts: {
   addStar: boolean;
   xp: number;
   champIds?: string[];
-}): Promise<{ progress: Progress; champPowerBefore: Record<string, number> }> {
+}): Promise<{ progress: Progress; champPowerBefore: Record<string, number>; oldPawnXp: number }> {
   const p = await loadProgress();
   const champPowerBefore: Record<string, number> = {};
+  const oldPawnXp = p.pawnXp ?? 0;
   if (opts.xp > 0) p.xp += opts.xp;
   if (opts.addStar) {
     const current = p.chapterStars[opts.chapterId] ?? 0;
     p.chapterStars[opts.chapterId] = Math.min(opts.starGoal, current + 1);
   }
   for (const id of opts.champIds ?? []) {
-    champPowerBefore[id] = p.champPower[id] ?? 1;
-    p.champPower[id] = Math.min(11, (p.champPower[id] ?? 1) + 1);
+    if (id === 'pawn') {
+      // Pawn uses its own long-form XP system rather than the 1-11 champPower counter.
+      p.pawnXp = (p.pawnXp ?? 0) + 1;
+    } else {
+      champPowerBefore[id] = p.champPower[id] ?? 1;
+      p.champPower[id] = Math.min(11, (p.champPower[id] ?? 1) + 1);
+    }
   }
   await saveProgress(p);
-  return { progress: p, champPowerBefore };
+  return { progress: p, champPowerBefore, oldPawnXp };
 }
 
 /** Power up a single champ. Returns new progress. */
