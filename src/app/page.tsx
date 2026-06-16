@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampArt } from '@/components/champs/ChampArt';
 import { resumeAudio } from '@/audio/sfx';
+import { unlockSpeech } from '@/audio/speech';
 import { loadProgress } from '@/persistence/progress';
 import { getRank } from '@/progression/ranks';
 
@@ -24,6 +25,7 @@ export default function Home() {
 
   const play = () => {
     resumeAudio();
+    unlockSpeech();
     router.push('/play');
   };
 

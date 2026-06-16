@@ -8,6 +8,7 @@
 import { create } from 'zustand';
 import { Chess, type Color, type Move, type Square } from 'chess.js';
 import { PIECE_VALUE } from '@/chess/attacks';
+import { hangsMaterial } from '@/chess/safety';
 import { detectPlayerEvents, type TacticEvent } from '@/chess/tactics/detect';
 import { getBotMove } from '@/engine/engineClient';
 import type { Band } from '@/engine/difficulty';
@@ -52,6 +53,8 @@ interface StartOptions {
   fen?: string;
   playerColor?: Color;
   band: Band;
+  /** Blunder training-wheels: confirm before a move that clearly hangs material. */
+  safety?: boolean;
 }
 
 interface GameStore {
@@ -74,9 +77,20 @@ interface GameStore {
   playerCaptured: number;
   /** Consecutive captures by the player this game (drives DOUBLE KILL / TRIPLE KILL). */
   captureStreak: number;
+  /** Training-wheels on for this game. */
+  safety: boolean;
+  /** A move awaiting confirmation because it would hang material (or null). */
+  pendingMove: { from: Square; to: Square } | null;
+  /** Limited undos left this game. */
+  undosRemaining: number;
+  /** Half-moves played so far (so the HUD can disable undo with no history). */
+  moveCount: number;
 
   startGame: (opts: StartOptions) => void;
   selectSquare: (sq: Square) => void;
+  confirmPendingMove: () => void;
+  cancelPendingMove: () => void;
+  undoMove: () => void;
   clearEvents: () => void;
 }
 
@@ -93,7 +107,15 @@ export const useGame = create<GameStore>((set, get) => {
     } else if (game.isDraw()) {
       status = 'draw';
     }
-    set({ fen: game.fen(), turn, inCheck: game.isCheck(), status, winner, ...extra });
+    set({
+      fen: game.fen(),
+      turn,
+      inCheck: game.isCheck(),
+      status,
+      winner,
+      moveCount: game.history().length,
+      ...extra,
+    });
   }
 
   function tryMove(from: Square, to: Square, promotion: 'q' | 'r' | 'b' | 'n' = 'q'): Move | null {
@@ -215,8 +237,12 @@ export const useGame = create<GameStore>((set, get) => {
     eventSeq: 0,
     playerCaptured: 0,
     captureStreak: 0,
+    safety: false,
+    pendingMove: null,
+    undosRemaining: 3,
+    moveCount: 0,
 
-    startGame: ({ fen, playerColor = 'w', band }) => {
+    startGame: ({ fen, playerColor = 'w', band, safety = false }) => {
       game = fen ? new Chess(fen) : new Chess();
       resumeAudio();
       set({
@@ -229,6 +255,9 @@ export const useGame = create<GameStore>((set, get) => {
         eventSeq: 0,
         playerCaptured: 0,
         captureStreak: 0,
+        safety,
+        pendingMove: null,
+        undosRemaining: 3,
         thinking: false,
         winner: null,
         status: 'playing',
@@ -253,12 +282,47 @@ export const useGame = create<GameStore>((set, get) => {
       }
       // Tapping a legal destination with a piece already selected makes the move.
       if (st.selected && st.legalTargets.includes(sq)) {
+        // Training-wheels: if the move clearly hangs material, ask first.
+        if (st.safety && hangsMaterial(game.fen(), st.selected, sq)) {
+          playSound('select');
+          set({ pendingMove: { from: st.selected, to: sq } });
+          return;
+        }
         const move = tryMove(st.selected, sq);
         if (move) afterPlayerMove(move);
         return;
       }
       // Otherwise clear the selection.
       set({ selected: null, legalTargets: [] });
+    },
+
+    confirmPendingMove: () => {
+      const { pendingMove } = get();
+      if (!pendingMove) return;
+      set({ pendingMove: null });
+      const move = tryMove(pendingMove.from, pendingMove.to);
+      if (move) afterPlayerMove(move);
+    },
+
+    cancelPendingMove: () => set({ pendingMove: null }),
+
+    undoMove: () => {
+      const st = get();
+      if (st.undosRemaining <= 0 || st.thinking || st.status !== 'playing') return;
+      // Roll back to before the player's last move: undo the bot's reply, then
+      // the player's move, handing the turn back to the player.
+      if (game.history().length < 2) return;
+      game.undo();
+      game.undo();
+      sync({
+        selected: null,
+        legalTargets: [],
+        events: [],
+        pendingMove: null,
+        captureStreak: 0,
+        undosRemaining: st.undosRemaining - 1,
+        lastMove: null,
+      });
     },
 
     clearEvents: () => set({ events: [] }),

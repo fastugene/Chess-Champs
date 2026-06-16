@@ -34,7 +34,11 @@ export function Hud({
   const playerColor = useGame((s) => s.playerColor);
   const captured = useGame((s) => s.playerCaptured);
   const status = useGame((s) => s.status);
+  const undosRemaining = useGame((s) => s.undosRemaining);
+  const moveCount = useGame((s) => s.moveCount);
+  const undoMove = useGame((s) => s.undoMove);
   const yourTurn = turn === playerColor && status === 'playing';
+  const canUndo = undosRemaining > 0 && !thinking && status === 'playing' && moveCount >= 2;
 
   return (
     <div>
@@ -59,6 +63,9 @@ export function Hud({
           </div>
           <button className="chip" onClick={onHint} disabled={hintsLeft <= 0} aria-label="Hint">
             💡 {hintsLeft}
+          </button>
+          <button className="chip" onClick={undoMove} disabled={!canUndo} aria-label="Undo move">
+            ↩ {undosRemaining}
           </button>
         </div>
       </div>

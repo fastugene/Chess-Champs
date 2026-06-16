@@ -4,20 +4,36 @@ Generate each line in ElevenLabs, save as the slug filename + .mp3,
 and drop the file into this folder (/public/audio/).
 
 Use the same voice as the existing announcer clips.
-Keep the tone: friendly, energetic, kid-appropriate coach voice.
+Tone: friendly, energetic, kid-appropriate coach voice.
+The tutorial lines are calmer/more narrative than the announcer clips —
+think "cool mentor", not "hype commentator".
+
+The lines below are copied EXACTLY from chapters.ts (the voice: fields).
+Do not paraphrase — the text must match what is coded or the tutorial
+will silently play the wrong line.
+
+============================================
+ALREADY DONE — Chapter 1: Safety & Sight (mentor: Scrapper the Pawn)
+============================================
+
+FILE: tut-safety-intro.mp3  ✅
+FILE: tut-safety-what.mp3   ✅
+FILE: tut-safety-watch.mp3  ✅
+FILE: tut-safety-try.mp3    ✅
+FILE: tut-safety-yes.mp3    ✅
 
 ============================================
 CHAPTER 2 — Checkmate Basics (mentor: Finisher the Queen)
 ============================================
 
 FILE: tut-checkmate-intro.mp3
-LINE: "I'm Finisher the Queen. The most powerful piece on the board — and I deliver checkmate!"
+LINE: "I'm Finisher the Queen. The most powerful piece on the board -- and I deliver checkmate!"
 
 FILE: tut-checkmate-what.mp3
-LINE: "Checkmate means the king is in check and has NO squares to move to. The king is trapped. Game over — you win!"
+LINE: "Checkmate means the king is in check and has NO squares to move to. The king is trapped. Game over -- you win!"
 
 FILE: tut-checkmate-watch.mp3
-LINE: "The queen swoops to h8 — every escape square is covered. CHECKMATE!"
+LINE: "The queen swoops to h8 -- every escape square is covered. CHECKMATE!"
 
 FILE: tut-checkmate-try.mp3
 LINE: "Your turn! Move the queen to h8 to deliver checkmate!"
@@ -36,7 +52,7 @@ FILE: tut-opening-what.mp3
 LINE: "Three golden rules: move a center pawn first, bring your knights and bishops out, then CASTLE to keep your king safe. Do these and you start every game strong!"
 
 FILE: tut-opening-watch.mp3
-LINE: "Castle kingside — the king hides behind pawns. Safe and ready to attack!"
+LINE: "Castle kingside -- the king hides behind pawns. Safe and ready to attack!"
 
 FILE: tut-opening-try.mp3
 LINE: "Castle your king to safety! Move the king two squares toward the rook."
@@ -49,13 +65,13 @@ CHAPTER 4 — Fork & Double Attack (mentor: Forkmane the Knight)
 ============================================
 
 FILE: tut-fork-intro.mp3
-LINE: "Forkmane the Knight here! I'm the KING of the fork — I can attack two pieces with one jump!"
+LINE: "Forkmane the Knight here! I'm the KING of the fork -- I can attack two pieces with one jump!"
 
 FILE: tut-fork-what.mp3
-LINE: "A fork attacks two pieces at once. Your enemy can only move ONE piece out of danger — you grab the other for free! Knights are perfect for forks because they jump in unexpected directions."
+LINE: "A fork attacks two pieces at once. Your enemy can only move ONE piece out of danger -- you grab the other for free! Knights are perfect for forks because they jump in unexpected directions."
 
 FILE: tut-fork-watch.mp3
-LINE: "Knight jumps to e7 — check on the king AND attacking the rook. They can only save one!"
+LINE: "Knight jumps to e7 -- check on the king AND attacking the rook. They can only save one!"
 
 FILE: tut-fork-try.mp3
 LINE: "Jump the knight to e7 to fork the king and the rook!"
@@ -64,55 +80,77 @@ FILE: tut-fork-yes.mp3
 LINE: "FORK! The king must move, then you grab the rook for FREE!"
 
 ============================================
-CHAPTER 5 — Pins & Skewers (mentor: Scrapper the Pawn)
+CHAPTER 5 — Pins (mentor: Pinpoint the Bishop)
 ============================================
 
 FILE: tut-pin-intro.mp3
-LINE: "Scrapper here with a sneaky trick! Pins trap enemy pieces so they CAN'T move without losing something bigger!"
+LINE: "Pinpoint the Bishop here! I shoot diagonals and trap pieces so they can NEVER move safely!"
 
 FILE: tut-pin-what.mp3
-LINE: "Line up your bishop, rook, or queen with an enemy piece AND a more valuable piece behind it. The front piece is PINNED — if it moves, you take the bigger piece!"
+LINE: "Line up your bishop with an enemy piece AND a more valuable piece behind it. The front piece is PINNED -- if it moves, you take the bigger piece behind it!"
 
 FILE: tut-pin-watch.mp3
-LINE: "The bishop takes the knight — it was pinned and could never escape!"
+LINE: "The knight was pinned to the king -- it could not escape. Free piece!"
 
 FILE: tut-pin-try.mp3
-LINE: "The knight is pinned! Take it with your bishop!"
+LINE: "The knight is pinned and cannot run! Take it with your bishop!"
 
 FILE: tut-pin-yes.mp3
 LINE: "Got it! The pinned knight had nowhere to hide. Free piece!"
 
 ============================================
-CHAPTER 6 — Discovered Attacks (mentor: Forkmane the Knight)
+CHAPTER 6 — Skewers (mentor: Harpoon the Rook)
 ============================================
 
+FILE: tut-skewer-intro.mp3
+LINE: "Harpoon the Rook here! I fire down the whole file and skewer big pieces to grab the treasure behind them!"
+
+FILE: tut-skewer-what.mp3
+LINE: "A skewer is a reverse pin! Attack the BIG piece -- king or queen -- and it has to run out of the way. Then you grab the smaller piece that was hiding behind it. Free treasure!"
+
+FILE: tut-skewer-watch.mp3
+LINE: "Rook charges to a8 -- the king must run! Then the rook on a6 is yours for free."
+
+FILE: tut-skewer-try.mp3
+LINE: "Skewer the king! Move the rook to a8 to force it to run!"
+
+FILE: tut-skewer-yes.mp3
+LINE: "SKEWER! The king must move, then you grab the rook behind it. Free piece!"
+
+============================================
+CHAPTER 7 — Discovered Attacks (mentor: The Unseen)
+============================================
+
+NOTE: The Unseen is the secret cloaked character. Use a slightly more
+mysterious, quieter delivery for the intro -- then energetic for the payoff.
+
 FILE: tut-discovered-intro.mp3
-LINE: "Forkmane here! But this time we are using a SECRET trick — a piece hiding behind my knight is ready to strike!"
+LINE: "I am... the Unseen. You never saw me coming. Move one piece aside -- and the weapon hiding behind it strikes. That is a discovered attack."
 
 FILE: tut-discovered-what.mp3
 LINE: "A discovered attack works like a trap. You move one piece out of the way, and the piece BEHIND IT suddenly attacks something big. The enemy never sees it coming!"
 
 FILE: tut-discovered-watch.mp3
-LINE: "The knight jumps away — and the bishop shoots all the way to win the rook. Discovered attack!"
+LINE: "The knight jumps away -- and the bishop shoots all the way to win the rook. Discovered attack!"
 
 FILE: tut-discovered-try.mp3
 LINE: "Move the knight out of the way to unleash the bishop!"
 
 FILE: tut-discovered-yes.mp3
-LINE: "YES! The knight revealed the bishop — free rook!"
+LINE: "YES! The knight revealed the bishop -- free rook!"
 
 ============================================
-CHAPTER 7 — Endgames & Planning (mentor: Scrapper the Pawn)
+CHAPTER 8 — Endgames & Planning (mentor: Scrapper the Pawn)
 ============================================
 
 FILE: tut-endgame-intro.mp3
-LINE: "It is Scrapper — and I am about to become QUEEN! In the endgame, pawns are the secret weapon. Push me forward!"
+LINE: "It is Scrapper -- and I am about to become QUEEN! In the endgame, pawns are the secret weapon. Push me forward!"
 
 FILE: tut-endgame-what.mp3
 LINE: "When most pieces are gone, pawns rule! March your pawn to the other side of the board and it BECOMES A QUEEN. Use your king to protect it on the way!"
 
 FILE: tut-endgame-watch.mp3
-LINE: "The pawn reaches the end — PROMOTION! It becomes a queen and wins the game!"
+LINE: "The pawn reaches the end -- PROMOTION! It becomes a queen and wins the game!"
 
 FILE: tut-endgame-try.mp3
 LINE: "Promote the pawn! Move it from d7 to d8!"
@@ -121,15 +159,17 @@ FILE: tut-endgame-yes.mp3
 LINE: "QUEEN! You promoted the pawn! Now you have overwhelming power!"
 
 ============================================
-ALREADY DONE — Chapter 1 (for reference)
+SUMMARY — files to generate
 ============================================
 
-FILE: tut-safety-intro.mp3  ✅
-FILE: tut-safety-what.mp3   ✅
-FILE: tut-safety-watch.mp3  ✅
-FILE: tut-safety-try.mp3    ✅
-FILE: tut-safety-yes.mp3    ✅
+Chapter 2 (Checkmate):      tut-checkmate-intro/what/watch/try/yes  (5 files)
+Chapter 3 (Opening):        tut-opening-intro/what/watch/try/yes     (5 files)
+Chapter 4 (Fork):           tut-fork-intro/what/watch/try/yes        (5 files)
+Chapter 5 (Pins):           tut-pin-intro/what/watch/try/yes         (5 files)
+Chapter 6 (Skewers):        tut-skewer-intro/what/watch/try/yes      (5 files)  ← NEW
+Chapter 7 (Discovered):     tut-discovered-intro/what/watch/try/yes  (5 files)
+Chapter 8 (Endgames):       tut-endgame-intro/what/watch/try/yes     (5 files)
 
-============================================
-TOTAL REMAINING: 30 new mp3 files (6 chapters × 5 lines each)
-============================================
+TOTAL: 35 files to generate
+
+Chapter 1 (Safety) is already done (5 files already in /public/audio/).

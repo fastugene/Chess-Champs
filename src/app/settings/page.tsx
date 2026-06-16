@@ -13,9 +13,11 @@ import { BAND_ORDER, type Band } from '@/engine/difficulty';
 
 const BAND_LABELS: Record<Band, string> = {
   rookie: 'Rookie (easiest)',
+  novice: 'Novice',
   easy: 'Easy',
   medium: 'Medium',
-  hard: 'Hard (hardest)',
+  hard: 'Hard',
+  insane: 'Insane (hardest)',
 };
 
 export default function SettingsPage() {
@@ -61,6 +63,23 @@ export default function SettingsPage() {
             aria-label="Toggle speech"
           >
             {settings.speechMuted ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      </div>
+
+      {/* Training wheels */}
+      <div className="parent-section">
+        <div className="parent-row">
+          <div>
+            <div className="parent-label">Safety Helper</div>
+            <div className="parent-sub">Warns before a move that gives away a piece</div>
+          </div>
+          <button
+            className={`toggle-btn ${settings.trainingWheels ? 'on' : ''}`}
+            onClick={() => void save({ ...settings, trainingWheels: !settings.trainingWheels })}
+            aria-label="Toggle safety helper"
+          >
+            {settings.trainingWheels ? 'ON' : 'OFF'}
           </button>
         </div>
       </div>

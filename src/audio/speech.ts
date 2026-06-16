@@ -17,6 +17,24 @@ const FILE_MAP: Record<string, string> = {
 
 let current: HTMLAudioElement | null = null;
 let speechMuted = false;
+let audioUnlocked = false;
+
+/**
+ * iOS Safari blocks HTMLAudioElement.play() outside a direct user-gesture.
+ * Call this once from any button tap (e.g. the home PLAY button) to unlock
+ * the audio element family so later game-event triggered clips play normally.
+ */
+export function unlockSpeech(): void {
+  if (typeof window === 'undefined' || audioUnlocked) return;
+  const probe = new Audio();
+  probe.play().then(() => {
+    probe.pause();
+    audioUnlocked = true;
+  }).catch(() => {
+    // file missing or blocked — still counts as unlocked for future attempts
+    audioUnlocked = true;
+  });
+}
 
 export function setSpeechMuted(value: boolean): void {
   speechMuted = value;

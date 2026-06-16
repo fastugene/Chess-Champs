@@ -49,6 +49,12 @@ export function ChampArt({
         <Knight color={color} dark={dark} light={light} foot={foot} outline={outline} />
       ) : champId === 'queen' ? (
         <Queen color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      ) : champId === 'bishop' ? (
+        <Bishop color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      ) : champId === 'rook' ? (
+        <Rook color={color} dark={dark} light={light} foot={foot} outline={outline} />
+      ) : champId === 'unseen' ? (
+        <Unseen color={color} dark={dark} foot={foot} outline={outline} />
       ) : (
         <Pawn color={color} dark={dark} light={light} foot={foot} outline={outline} />
       )}
@@ -122,6 +128,95 @@ function Knight({ color, dark, foot, outline }: PartProps) {
       <circle cx="70" cy="65" r="1.2" fill="#ffffff" />
       <path d="M62 56 Q72 53 80 59" stroke={outline} strokeWidth="2" fill="none" strokeLinecap="round" />
       <path d="M50 95 Q58 102 69 98" stroke={outline} strokeWidth="2.4" fill="none" strokeLinecap="round" />
+    </g>
+  );
+}
+
+function Unseen({ color, dark, foot, outline }: Omit<PartProps, 'light'>) {
+  return (
+    <g>
+      {/* Base */}
+      <rect x="44" y="150" width="72" height="14" rx="7" fill={foot} />
+      {/* Flowing cloak body */}
+      <path
+        d="M50 150 C54 128 60 106 70 86 C74 74 77 60 80 46 C83 60 86 74 90 86 C100 106 106 128 110 150 Z"
+        fill={dark}
+        stroke={outline}
+        strokeWidth="2"
+      />
+      {/* Deep shadow at cloak centre */}
+      <path
+        d="M64 150 C66 130 70 108 76 90 C78 78 79 64 80 52 C81 64 82 78 84 90 C90 108 94 130 96 150 Z"
+        fill={outline}
+        opacity="0.55"
+      />
+      {/* Hood */}
+      <circle cx="80" cy="50" r="26" fill={dark} stroke={outline} strokeWidth="2" />
+      <circle cx="80" cy="46" r="20" fill={outline} opacity="0.55" />
+      {/* Glowing eyes — the only visible feature, no CoolFace */}
+      <ellipse cx="72" cy="47" rx="5" ry="4.5" fill={color} />
+      <ellipse cx="88" cy="47" rx="5" ry="4.5" fill={color} />
+      <ellipse cx="72" cy="46" rx="2.5" ry="2" fill="#ffffff" opacity="0.85" />
+      <ellipse cx="88" cy="46" rx="2.5" ry="2" fill="#ffffff" opacity="0.85" />
+      {/* Diagonal hidden-attack beam across the cloak */}
+      <line x1="52" y1="118" x2="108" y2="82" stroke={color} strokeWidth="3" strokeLinecap="round" opacity="0.5" />
+      <line x1="52" y1="118" x2="108" y2="82" stroke="#ffffff" strokeWidth="1" strokeLinecap="round" opacity="0.35" />
+      {/* Cloak-edge wisps */}
+      <path d="M51 144 Q57 130 60 118" stroke={color} strokeWidth="2" fill="none" opacity="0.4" strokeLinecap="round" />
+      <path d="M109 144 Q103 130 100 118" stroke={color} strokeWidth="2" fill="none" opacity="0.4" strokeLinecap="round" />
+    </g>
+  );
+}
+
+function Bishop({ color, dark, light, foot, outline }: PartProps) {
+  return (
+    <g>
+      {/* Base */}
+      <rect x="44" y="150" width="72" height="14" rx="7" fill={foot} />
+      {/* Body — tapered trapezoid */}
+      <path d="M55 150 L63 114 Q80 106 97 114 L105 150 Z" fill={color} stroke={dark} strokeWidth="2" />
+      <ellipse cx="80" cy="114" rx="22" ry="6" fill={dark} />
+      {/* Head ball */}
+      <circle cx="80" cy="90" r="22" fill={color} stroke={dark} strokeWidth="2" />
+      <circle cx="71" cy="80" r="8" fill={light} opacity="0.55" />
+      {/* Neck collar */}
+      <ellipse cx="80" cy="68" rx="10" ry="4" fill={dark} />
+      {/* Miter hat — the bishop's distinctive tall point */}
+      <path d="M64 68 Q72 52 80 26 Q88 52 96 68 Z" fill={color} stroke={dark} strokeWidth="1.5" />
+      {/* Notch groove in miter */}
+      <path d="M77 66 L80 46 L83 66" fill={dark} />
+      {/* Ball finial at tip */}
+      <circle cx="80" cy="26" r="5" fill={color} stroke={dark} strokeWidth="1.5" />
+      {/* Face */}
+      <CoolFace cx={80} cy={91} s={1.0} outline={outline} />
+    </g>
+  );
+}
+
+function Rook({ color, dark, light, foot, outline }: PartProps) {
+  return (
+    <g>
+      {/* Wide base — rook is the broadest piece */}
+      <rect x="34" y="150" width="92" height="14" rx="7" fill={foot} />
+      {/* Tower body */}
+      <rect x="46" y="82" width="68" height="68" rx="4" fill={color} stroke={dark} strokeWidth="2" />
+      {/* Left-side depth shading */}
+      <rect x="46" y="82" width="14" height="68" rx="4" fill={dark} opacity="0.22" />
+      {/* Highlight stripe */}
+      <rect x="64" y="88" width="8" height="54" rx="3" fill={light} opacity="0.22" />
+      {/* Base collar */}
+      <rect x="40" y="144" width="80" height="8" rx="3" fill={dark} opacity="0.4" />
+      {/* Merlon platform */}
+      <rect x="42" y="72" width="76" height="14" rx="2" fill={dark} />
+      {/* Battlements — 3 merlons with 2 gaps */}
+      <rect x="44" y="50" width="20" height="24" rx="3" fill={color} stroke={dark} strokeWidth="1.5" />
+      <rect x="70" y="50" width="20" height="24" rx="3" fill={color} stroke={dark} strokeWidth="1.5" />
+      <rect x="96" y="50" width="20" height="24" rx="3" fill={color} stroke={dark} strokeWidth="1.5" />
+      {/* Arrow-loop windows on sides (below face) */}
+      <rect x="50" y="112" width="5" height="10" rx="2" fill={dark} opacity="0.45" />
+      <rect x="105" y="112" width="5" height="10" rx="2" fill={dark} opacity="0.45" />
+      {/* Face on the tower front */}
+      <CoolFace cx={80} cy={106} s={1.2} outline={outline} />
     </g>
   );
 }

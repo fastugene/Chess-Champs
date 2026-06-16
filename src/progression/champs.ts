@@ -65,6 +65,36 @@ export const CHAMPS: Record<string, Champ> = {
     tagline: "Let's end this!",
     lesson: 'Checkmate! The king is trapped with nowhere to run. You win!',
   },
+  bishop: {
+    id: 'bishop',
+    name: 'Pinpoint the Bishop',
+    tactic: 'Pin',
+    rarity: 'Rare',
+    color: '#a78bfa',
+    gear: 'Diagonal Lance',
+    tagline: 'Pinned — you cannot move!',
+    lesson: 'A pin traps a piece in front of something more valuable — move it and you lose the big prize!',
+  },
+  rook: {
+    id: 'rook',
+    name: 'Harpoon the Rook',
+    tactic: 'Skewer',
+    rarity: 'Super Rare',
+    color: '#f97316',
+    gear: 'Tower Spear',
+    tagline: 'Run... and lose what is behind you!',
+    lesson: 'A skewer attacks the big piece — it must run, and you grab the smaller piece left behind!',
+  },
+  unseen: {
+    id: 'unseen',
+    name: 'The Unseen',
+    tactic: 'Discovered Attack',
+    rarity: 'Epic',
+    color: '#b06bff',
+    gear: 'Cloaked Blades',
+    tagline: 'You never saw me coming!',
+    lesson: 'A discovered attack moves one piece aside to unleash a hidden piece behind it — two threats in one!',
+  },
 };
 
 export function getChamp(id: string): Champ | undefined {

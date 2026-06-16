@@ -1,11 +1,15 @@
 /**
  * The single interface the game uses to ask the opponent for a move.
  *
- * Phase 2: tries Stockfish (WASM Web Worker) first; if it returns null
- * (loading, unsupported, or timed-out) falls back to the in-app minimax bot.
+ * Hybrid engine (see difficulty.ts): low bands run the in-app minimax bot,
+ * the top two bands run Stockfish (WASM Web Worker) capped to its lowest Elo.
+ * Either way, two mistake layers keep it beatable and human-looking:
+ *  1. a small `blunderRate` chance of an outright random giveaway move, and
+ *  2. otherwise, sampling uniformly from the engine's top-`window` ranked moves.
  * A natural "thinking" pause is added so moves don't feel instant/robotic.
  */
-import { stockfishMove } from './stockfishClient';
+import { Chess } from 'chess.js';
+import { stockfishRankedMoves } from './stockfishClient';
 import { chooseBotMove, type SimpleMove } from './bot';
 import { BANDS, type Band } from './difficulty';
 
@@ -13,18 +17,49 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** A fully random legal move — the occasional "giveaway" blunder. */
+function randomLegalMove(fen: string): SimpleMove | null {
+  const g = new Chess(fen);
+  const moves = g.moves({ verbose: true });
+  if (moves.length === 0) return null;
+  const m = moves[Math.floor(Math.random() * moves.length)];
+  return { from: m.from, to: m.to, promotion: m.promotion };
+}
+
+/** Pick uniformly from the top-`window` ranked moves. */
+function pickFromWindow(moves: SimpleMove[], window: number): SimpleMove | null {
+  if (moves.length === 0) return null;
+  const k = Math.min(window, moves.length);
+  return moves[Math.floor(Math.random() * k)];
+}
+
 export async function getBotMove(fen: string, band: Band): Promise<SimpleMove | null> {
   const cfg = BANDS[band];
 
-  // Run Stockfish and the minimum think-delay concurrently so we never wait
-  // longer than necessary, but always at least 400–800 ms (feels natural).
-  const [sfMove] = await Promise.all([
-    stockfishMove(fen, cfg.skillLevel, cfg.depth),
-    delay(400 + Math.random() * 400),
-  ]);
+  // Always wait at least 400–800 ms so the reply feels considered, not instant.
+  const think = delay(400 + Math.random() * 400);
 
-  if (sfMove) return sfMove;
+  // 1. Small chance of an outright random giveaway — applies to BOTH engines.
+  if (Math.random() < cfg.blunderRate) {
+    const blunder = randomLegalMove(fen);
+    if (blunder) {
+      await think;
+      return blunder;
+    }
+  }
 
-  // Stockfish unavailable — fall back to the minimax bot.
+  // 2. Otherwise: a near-best move from the configured engine.
+  if (cfg.engine === 'stockfish') {
+    const [ranked] = await Promise.all([
+      stockfishRankedMoves(fen, { depth: cfg.depth, elo: cfg.elo, multiPV: cfg.window }),
+      think,
+    ]);
+    const pick = pickFromWindow(ranked, cfg.window);
+    if (pick) return pick;
+    // Stockfish unavailable — fall back to the minimax bot.
+    return chooseBotMove(fen, band);
+  }
+
+  await think;
   return chooseBotMove(fen, band);
 }

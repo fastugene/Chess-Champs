@@ -221,15 +221,15 @@ export const CHAPTERS: Chapter[] = [
     levelIds: [13, 14, 15, 16, 17],
   },
 
-  // ── Chapter 5: Pins & Skewers ─────────────────────────────────────────
+  // ── Chapter 5: Pins ───────────────────────────────────────────────────
   {
     id: 5,
-    title: 'Pins & Skewers',
-    mentor: 'pawn',
+    title: 'Pins',
+    mentor: 'bishop',
     tactic: 'Pin',
     concept: 'A pin traps a piece in front of something more valuable. It cannot move or the bigger piece gets captured!',
     demo: {
-      // White: Ke1, Bb5 — Black: Ke8, Nc6 (bishop pins knight to king)
+      // White: Ke1, Bb5 — Black: Ke8, Nc6. Bishop pins the knight to the king.
       fen: '4k3/8/2n5/1B6/8/8/8/4K3 w - - 0 1',
       highlight: ['b5', 'c6', 'e8'],
       caption: 'The bishop pins the knight -- if it moves, the king is in check! The knight is stuck.',
@@ -237,40 +237,85 @@ export const CHAPTERS: Chapter[] = [
     tutorial: {
       fen: '4k3/8/2n5/1B6/8/8/8/4K3 w - - 0 1',
       intro: {
-        text: "Scrapper here with a sneaky trick! Pins trap enemy pieces so they CAN'T move without losing something bigger!",
+        text: "Pinpoint the Bishop here! I shoot diagonals and trap pieces so they can NEVER move safely!",
         voice: 'tut-pin-intro',
       },
       explain: {
-        text: 'Line up your bishop, rook, or queen with an enemy piece AND a more valuable piece behind it. The front piece is PINNED -- if it moves, you take the bigger piece!',
+        text: 'Line up your bishop with an enemy piece AND a more valuable piece behind it. The front piece is PINNED -- if it moves, you take the bigger piece behind it!',
         voice: 'tut-pin-what',
       },
       demo: {
         from: 'b5',
         to: 'c6',
-        caption: 'The bishop takes the knight -- it was pinned and could never escape!',
+        caption: 'The knight was pinned to the king -- it could not escape. Free piece!',
         voice: 'tut-pin-watch',
       },
       practice: {
-        prompt: 'The knight is pinned! Take it with your bishop!',
+        prompt: 'The knight is pinned and cannot run! Take it with your bishop!',
         voice: 'tut-pin-try',
         from: 'b5',
         to: 'c6',
         success: 'Got it! The pinned knight had nowhere to hide. Free piece!',
         successVoice: 'tut-pin-yes',
-        nudge: 'The bishop can take the knight on c6 -- it is pinned to the king!',
+        nudge: 'The knight on c6 is pinned to the king -- take it with your bishop!',
       },
     },
     starGoal: 3,
     xpGoal: 3000,
-    starEventTypes: ['pin', 'skewer'],
-    levelIds: [18, 19, 20],
+    starEventTypes: ['pin'],
+    levelIds: [18, 19, 20, 21],
   },
 
-  // ── Chapter 6: Discovered Attacks ─────────────────────────────────────
+  // ── Chapter 6: Skewers ────────────────────────────────────────────────
   {
     id: 6,
+    title: 'Skewers',
+    mentor: 'rook',
+    tactic: 'Skewer',
+    concept: 'A skewer attacks the BIG piece first! It has to run -- then you grab the smaller piece hiding behind it!',
+    demo: {
+      // White: Kh1, Ra1 — Black: Ka8, Ra6. Ra1→a8+ skewers king, exposing the rook.
+      fen: 'k7/8/r7/8/8/8/8/R6K w - - 0 1',
+      highlight: ['a1', 'a8', 'a6'],
+      caption: 'The rook attacks the king -- it must run. Then the rook on a6 is free for the taking!',
+    },
+    tutorial: {
+      fen: 'k7/8/r7/8/8/8/8/R6K w - - 0 1',
+      intro: {
+        text: "Harpoon the Rook here! I fire down the whole file and skewer big pieces to grab the treasure behind them!",
+        voice: 'tut-skewer-intro',
+      },
+      explain: {
+        text: 'A skewer is a reverse pin! Attack the BIG piece -- king or queen -- and it has to run out of the way. Then you grab the smaller piece that was hiding behind it. Free treasure!',
+        voice: 'tut-skewer-what',
+      },
+      demo: {
+        from: 'a1',
+        to: 'a8',
+        caption: 'Rook charges to a8 -- the king must run! Then the rook on a6 is yours for free.',
+        voice: 'tut-skewer-watch',
+      },
+      practice: {
+        prompt: 'Skewer the king! Move the rook to a8 to force it to run!',
+        voice: 'tut-skewer-try',
+        from: 'a1',
+        to: 'a8',
+        success: 'SKEWER! The king must move, then you grab the rook behind it. Free piece!',
+        successVoice: 'tut-skewer-yes',
+        nudge: 'Move your rook from a1 all the way to a8 to attack the king!',
+      },
+    },
+    starGoal: 3,
+    xpGoal: 4000,
+    starEventTypes: ['skewer'],
+    levelIds: [22, 23, 24],
+  },
+
+  // ── Chapter 7: Discovered Attacks ─────────────────────────────────────
+  {
+    id: 7,
     title: 'Discovered Attacks',
-    mentor: 'knight',
+    mentor: 'unseen',
     tactic: 'Discovery',
     concept: 'A discovered attack hides a secret weapon! Move one piece out of the way and reveal a devastating attack from behind it!',
     demo: {
@@ -282,7 +327,7 @@ export const CHAPTERS: Chapter[] = [
     tutorial: {
       fen: 'r3k3/8/8/3N4/8/8/6B1/4K3 w - - 0 1',
       intro: {
-        text: "Forkmane here! But this time we are using a SECRET trick -- a piece hiding behind my knight is ready to strike!",
+        text: "I am... the Unseen. You never saw me coming. Move one piece aside -- and the weapon hiding behind it strikes. That is a discovered attack.",
         voice: 'tut-discovered-intro',
       },
       explain: {
@@ -306,14 +351,14 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 4500,
+    xpGoal: 5500,
     starEventTypes: ['discovered-attack'],
-    levelIds: [21, 22, 23, 24],
+    levelIds: [25, 26, 27],
   },
 
-  // ── Chapter 7: Endgames & Planning ────────────────────────────────────
+  // ── Chapter 8: Endgames & Planning ────────────────────────────────────
   {
-    id: 7,
+    id: 8,
     title: 'Endgames & Planning',
     mentor: 'pawn',
     tactic: 'Endgame',
@@ -351,9 +396,9 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 6000,
+    xpGoal: 7000,
     starEventTypes: ['checkmate', 'win-material'],
-    levelIds: [25, 26, 27, 28, 29, 30],
+    levelIds: [28, 29, 30],
   },
 ];
 

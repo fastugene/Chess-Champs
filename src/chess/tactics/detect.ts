@@ -108,7 +108,7 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       tier: 'major',
       label: 'PIN!',
       sub: pin,
-      champId: 'pawn',
+      champId: 'bishop',
     });
   }
 
@@ -120,7 +120,7 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       tier: 'major',
       label: 'SKEWER!',
       sub: skewer,
-      champId: 'pawn',
+      champId: 'rook',
     });
   }
 
@@ -132,7 +132,7 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       tier: 'major',
       label: 'DISCOVERED ATTACK!',
       sub: 'Hidden threat revealed!',
-      champId: 'knight',
+      champId: 'unseen',
     });
   }
 

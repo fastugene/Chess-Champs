@@ -15,6 +15,7 @@ import {
   addStar,
   completeLevel,
   isChapterComplete,
+  loadParentSettings,
   loadProgress,
   markChapterMastered,
   markPrimerSeen,
@@ -24,6 +25,7 @@ import {
   DEFAULT_PROGRESS,
   type Progress,
 } from '@/persistence/progress';
+import { BAND_ORDER } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { speak } from '@/lib/speech';
@@ -39,6 +41,7 @@ export default function PlayPage() {
 
   const [phase, setPhase] = useState<Phase>('lesson');
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
+  const [trainingWheels, setTrainingWheels] = useState(true);
   const [infoOpen, setInfoOpen] = useState(false);
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
@@ -48,6 +51,9 @@ export default function PlayPage() {
   const bestEventRef = useRef<import('@/chess/tactics/detect').TacticEvent | null>(null);
 
   const startGame = useGame((s) => s.startGame);
+  const pendingMove = useGame((s) => s.pendingMove);
+  const confirmPendingMove = useGame((s) => s.confirmPendingMove);
+  const cancelPendingMove = useGame((s) => s.cancelPendingMove);
   const status = useGame((s) => s.status);
   const winner = useGame((s) => s.winner);
   const playerColor = useGame((s) => s.playerColor);
@@ -66,19 +72,24 @@ export default function PlayPage() {
       const ch = chapterForLevel(lvl);
       setPhase(p.primersSeen.includes(ch.id) ? 'lesson' : 'primer');
     });
+    void loadParentSettings().then((s) => setTrainingWheels(s.trainingWheels));
   }, []);
+
+  // Training-wheels auto-retire: only warn until the bot climbs past `medium`.
+  const RETIRE_IDX = BAND_ORDER.indexOf('medium');
+  const safetyOn = trainingWheels && BAND_ORDER.indexOf(progress.botBand) < RETIRE_IDX;
 
   const begin = useCallback(() => {
     handledGameOver.current = false;
     lastSeq.current = 0;
     bestEventRef.current = null;
     // Use the auto-calibrated band so difficulty adapts to the son's skill.
-    startGame({ playerColor: level.playerColor, band: progress.botBand });
+    startGame({ playerColor: level.playerColor, band: progress.botBand, safety: safetyOn });
     setPhase('playing');
     setHintsLeft(3);
     setHint(null);
     setRecap(null);
-  }, [level, startGame, progress.botBand]);
+  }, [level, startGame, progress.botBand, safetyOn]);
 
   // Award a star whenever the player lands this chapter's tactic.
   useEffect(() => {
@@ -178,6 +189,26 @@ export default function PlayPage() {
       </div>
 
       <Celebration />
+
+      {pendingMove && (
+        <div className="overlay">
+          <div className="card safety-card">
+            <div className="safety-emoji">🛡️</div>
+            <h3 style={{ margin: '6px 0' }}>Is that square safe?</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              That spot can be taken by your opponent. Want to move there anyway?
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button className="btn btn-ghost" style={{ flex: 1 }} onClick={cancelPendingMove}>
+                Let me rethink
+              </button>
+              <button className="btn" style={{ flex: 1 }} onClick={confirmPendingMove}>
+                Move anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {phase === 'primer' && (
         <ChapterPrimer

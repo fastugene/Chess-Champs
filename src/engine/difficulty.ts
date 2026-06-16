@@ -1,31 +1,45 @@
 /**
- * Difficulty bands for the opponent.
+ * Difficulty bands for the opponent — a 6-band hybrid ladder.
  *
- * Phase 1: in-app minimax (bot.ts). Each band trades search depth against a
- * "blunder rate" — the chance the bot just plays a random legal move.
- * Phase 2: Stockfish WASM Web Worker. skillLevel (0-20) controls strength;
- * depth caps the search so it stays snappy on mobile.
- * Auto-calibration in progress.ts adjusts the active band to keep the son
- * winning 55–65% of games without feeling a floor.
+ * The home-grown material-only minimax bot (bot.ts) powers the beatable range
+ * (rookie..medium): it counts material and looks shallow, so it plays like a
+ * beginner by nature — grabs pieces, misses tactics, hangs its own pieces.
+ * Stockfish (stockfishClient.ts) is reserved for the top two bands (hard,
+ * insane) as a ceiling, capped to its lowest Elo so it never crushes a kid.
+ *
+ * Two mistake layers keep it fair AND human-looking:
+ *  - `window`: pick uniformly from the engine's top-`window` ranked moves, so
+ *    "mistakes" are plausible (a kid missing the best move), not glitches.
+ *  - `blunderRate`: a small chance of an outright random giveaway move, applied
+ *    to BOTH engines, so the bot occasionally hands over free material.
+ *
+ * Auto-calibration in progress.ts drops one band on every loss and climbs one
+ * band only after 4 wins in a row.
  */
-export type Band = 'rookie' | 'easy' | 'medium' | 'hard';
+export type Band = 'rookie' | 'novice' | 'easy' | 'medium' | 'hard' | 'insane';
+
+export type EngineKind = 'minimax' | 'stockfish';
 
 export interface BotConfig {
-  /** Stockfish Skill Level (0 = weakest, 20 = full strength). */
-  skillLevel: number;
-  /** Max search depth in plies — keeps mobile latency acceptable. */
+  /** Which engine drives this band. */
+  engine: EngineKind;
+  /** Search depth — minimax plies, or Stockfish `go depth`. */
   depth: number;
-  /** Minimax fallback: probability of a random legal move instead of searched. */
+  /** Sample uniformly from the top-`window` ranked moves (1 = always best). */
+  window: number;
+  /** Small chance of an outright random "giveaway" move (both engines). */
   blunderRate: number;
-  /** Minimax fallback: pick randomly from the top-K searched moves. */
-  topK: number;
+  /** Stockfish only: cap strength to this Elo via UCI_LimitStrength. */
+  elo?: number;
 }
 
 export const BANDS: Record<Band, BotConfig> = {
-  rookie: { skillLevel: 1,  depth: 5,  blunderRate: 0.40, topK: 5 },
-  easy:   { skillLevel: 4,  depth: 7,  blunderRate: 0.25, topK: 4 },
-  medium: { skillLevel: 8,  depth: 9,  blunderRate: 0.12, topK: 2 },
-  hard:   { skillLevel: 13, depth: 11, blunderRate: 0.04, topK: 1 },
+  rookie: { engine: 'minimax',   depth: 1, window: 6, blunderRate: 0.20 },
+  novice: { engine: 'minimax',   depth: 2, window: 5, blunderRate: 0.15 },
+  easy:   { engine: 'minimax',   depth: 2, window: 4, blunderRate: 0.12 },
+  medium: { engine: 'minimax',   depth: 3, window: 3, blunderRate: 0.08 },
+  hard:   { engine: 'stockfish', depth: 4, window: 5, blunderRate: 0.10, elo: 1320 },
+  insane: { engine: 'stockfish', depth: 4, window: 2, blunderRate: 0.05, elo: 1320 },
 };
 
-export const BAND_ORDER: Band[] = ['rookie', 'easy', 'medium', 'hard'];
+export const BAND_ORDER: Band[] = ['rookie', 'novice', 'easy', 'medium', 'hard', 'insane'];

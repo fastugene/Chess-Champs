@@ -1,14 +1,14 @@
 /**
  * A small, kid-tuned chess opponent.
  *
- * It runs a shallow negamax search over material, then either plays one of the
- * top moves or — based on the band's blunder rate — fumbles with a random legal
- * move. The result is an opponent that mostly plays sensibly but regularly
- * leaves pieces hanging, which is exactly what a 9-year-old needs to practise
+ * It runs a shallow negamax search over material, then samples uniformly from
+ * its top-`window` moves. A material-counting, shallow-looking bot plays like a
+ * beginner by nature, which is exactly what a 9-year-old needs to practise
  * "grab the free piece, keep yours safe."
  *
- * NOTE: This is intentionally simple and self-contained. Phase 2 replaces the
- * search with Stockfish (WASM) behind the same getBotMove() interface.
+ * The occasional outright-random "giveaway" blunder is handled one level up in
+ * engineClient (so it covers Stockfish too) — this function is pure near-best
+ * move selection.
  */
 import { Chess } from 'chess.js';
 import { PIECE_VALUE } from '@/chess/attacks';
@@ -57,12 +57,6 @@ export function chooseBotMove(fen: string, band: Band): SimpleMove | null {
 
   const cfg = BANDS[band];
 
-  // Kid-like blunder: sometimes just play anything legal.
-  if (Math.random() < cfg.blunderRate) {
-    const m = moves[Math.floor(Math.random() * moves.length)];
-    return { from: m.from, to: m.to, promotion: m.promotion };
-  }
-
   const color = chess.turn() === 'w' ? 1 : -1;
   const scored = moves.map((m) => {
     chess.move({ from: m.from, to: m.to, promotion: m.promotion });
@@ -72,7 +66,7 @@ export function chooseBotMove(fen: string, band: Band): SimpleMove | null {
   });
 
   scored.sort((a, b) => b.s - a.s);
-  const k = Math.min(cfg.topK, scored.length);
+  const k = Math.min(cfg.window, scored.length);
   const pick = scored[Math.floor(Math.random() * k)].m;
   return { from: pick.from, to: pick.to, promotion: pick.promotion };
 }

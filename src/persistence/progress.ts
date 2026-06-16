@@ -30,10 +30,15 @@ export interface Progress {
    */
   botBand: Band;
   /**
-   * Last 10 game results (oldest first). Used by the calibration loop to
-   * decide whether to bump or drop the difficulty band.
+   * Last 10 game results (oldest first). Telemetry only now — calibration is
+   * driven by `consecutiveWins` (see recordGameResult).
    */
   recentResults: GameResult[];
+  /**
+   * Wins in a row at the current band. The bot climbs one band only after 4 in
+   * a row; any loss or draw resets it to 0.
+   */
+  consecutiveWins: number;
   /** Current rank tier id (e.g. 'wood', 'stone', 'iron'). */
   rankTier: string;
   /** Division within the tier (3 = lowest, 1 = highest). */
@@ -51,6 +56,7 @@ export const DEFAULT_PROGRESS: Progress = {
   chaptersMastered: [],
   botBand: 'rookie',
   recentResults: [],
+  consecutiveWins: 0,
   rankTier: 'wood',
   rankDivision: 3,
 };
@@ -171,12 +177,18 @@ export interface ParentSettings {
   bandFloor: Band;
   /** Maximum difficulty band — bot never goes harder than this. */
   bandCeiling: Band;
+  /**
+   * Blunder training-wheels: warn before a move that clearly hangs material.
+   * On by default; auto-retires once the bot climbs past `medium`.
+   */
+  trainingWheels: boolean;
 }
 
 export const DEFAULT_PARENT: ParentSettings = {
   speechMuted: false,
   bandFloor: 'rookie',
   bandCeiling: 'hard',
+  trainingWheels: true,
 };
 
 export async function loadParentSettings(): Promise<ParentSettings> {
@@ -209,30 +221,37 @@ export async function resetProgress(): Promise<void> {
 }
 
 /**
- * Record a game result and auto-calibrate the difficulty band so the son wins
- * 55–65% of recent games. Only recalibrates after 5+ results to avoid noise.
- * Changes band at most one step at a time for smooth, invisible adjustment.
- * Respects the parent's floor/ceiling if set.
+ * Record a game result and auto-calibrate the difficulty band.
+ *
+ * Streak-driven and tuned to a child's emotional experience:
+ *  - loss  → drop one band immediately (responsive — never let frustration build)
+ *  - win   → count it; only after 4 wins in a row, climb one band (earned)
+ *  - draw  → no band change, but it breaks the win streak
+ *
+ * Always moves at most one band at a time, and respects the parent's
+ * floor/ceiling. `recentResults` is kept for telemetry only.
  */
 export async function recordGameResult(result: GameResult): Promise<Progress> {
   const p = await loadProgress();
   const parent = await loadParentSettings();
 
-  const results: GameResult[] = [...p.recentResults, result].slice(-10);
-  p.recentResults = results;
+  p.recentResults = [...p.recentResults, result].slice(-10);
 
-  if (results.length >= 5) {
-    const wins = results.filter((r) => r === 'win').length;
-    const winRate = wins / results.length;
-    const idx = BAND_ORDER.indexOf(p.botBand);
-    const floorIdx = BAND_ORDER.indexOf(parent.bandFloor);
-    const ceilIdx = BAND_ORDER.indexOf(parent.bandCeiling);
+  const idx = BAND_ORDER.indexOf(p.botBand);
+  const floorIdx = BAND_ORDER.indexOf(parent.bandFloor);
+  const ceilIdx = BAND_ORDER.indexOf(parent.bandCeiling);
 
-    if (winRate > 0.65 && idx < ceilIdx) {
-      p.botBand = BAND_ORDER[idx + 1];
-    } else if (winRate < 0.55 && idx > floorIdx) {
-      p.botBand = BAND_ORDER[idx - 1];
+  if (result === 'loss') {
+    if (idx > floorIdx) p.botBand = BAND_ORDER[idx - 1];
+    p.consecutiveWins = 0;
+  } else if (result === 'win') {
+    p.consecutiveWins += 1;
+    if (p.consecutiveWins >= 4) {
+      if (idx < ceilIdx) p.botBand = BAND_ORDER[idx + 1];
+      p.consecutiveWins = 0;
     }
+  } else {
+    p.consecutiveWins = 0;
   }
 
   await saveProgress(p);
