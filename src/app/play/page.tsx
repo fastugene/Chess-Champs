@@ -53,6 +53,7 @@ export default function PlayPage() {
   const [recap, setRecap] = useState<RecapData | null>(null);
   const [evolve, setEvolve] = useState<{ form: PawnForm; gadgets: GadgetId[]; newGadget?: GadgetId; power: number } | null>(null);
   const [showNameModal, setShowNameModal] = useState(false);
+  const pendingNameModal = useRef(false);
   const handledGameOver = useRef(false);
   const lastSeq = useRef(0);
   const bestEventRef = useRef<import('@/chess/tactics/detect').TacticEvent | null>(null);
@@ -90,6 +91,7 @@ export default function PlayPage() {
     handledGameOver.current = false;
     lastSeq.current = 0;
     bestEventRef.current = null;
+    pendingNameModal.current = false;
     // Use the auto-calibrated band so difficulty adapts to the son's skill.
     startGame({ playerColor: level.playerColor, band: progress.botBand, safety: safetyOn });
     setPhase('playing');
@@ -159,9 +161,9 @@ export default function PlayPage() {
       recordGameResult(gameResult),
     ]).then(([p]) => {
       setProgress(p);
-      // First game: show the name-your-pawn modal after the recap if not named yet.
+      // First game: queue the name-your-pawn modal to show AFTER recap is dismissed.
       if (!p.pawnCustomName && p.levelsCompleted.length === 1) {
-        setShowNameModal(true);
+        pendingNameModal.current = true;
       }
       const ch = chapterForLevel(level.id);
       let chapterMastered = false;
@@ -279,7 +281,18 @@ export default function PlayPage() {
       )}
 
       {recap && (
-        <RecapCard {...recap} onPlayAgain={begin} onHome={() => router.push('/')} />
+        <RecapCard
+          {...recap}
+          onPlayAgain={() => {
+            setRecap(null);
+            if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
+            begin();
+          }}
+          onHome={() => {
+            if (pendingNameModal.current) { pendingNameModal.current = false; setShowNameModal(true); return; }
+            router.push('/');
+          }}
+        />
       )}
 
       {showNameModal && (

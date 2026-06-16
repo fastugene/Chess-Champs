@@ -18,7 +18,7 @@
 export interface StockfishMove {
   from: string;
   to: string;
-  promotion?: string;
+  promotion?: 'q' | 'r' | 'b' | 'n';
 }
 
 type Resolve = (moves: StockfishMove[]) => void;
@@ -42,7 +42,7 @@ function parseMove(uci: string | undefined): StockfishMove | null {
   return {
     from: uci.slice(0, 2),
     to: uci.slice(2, 4),
-    promotion: uci[4] || undefined,
+    promotion: (uci[4] || undefined) as StockfishMove['promotion'],
   };
 }
 

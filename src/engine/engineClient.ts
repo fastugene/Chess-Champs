@@ -23,7 +23,7 @@ function randomLegalMove(fen: string): SimpleMove | null {
   const moves = g.moves({ verbose: true });
   if (moves.length === 0) return null;
   const m = moves[Math.floor(Math.random() * moves.length)];
-  return { from: m.from, to: m.to, promotion: m.promotion };
+  return { from: m.from, to: m.to, promotion: m.promotion as SimpleMove['promotion'] };
 }
 
 /** Pick uniformly from the top-`window` ranked moves. */
