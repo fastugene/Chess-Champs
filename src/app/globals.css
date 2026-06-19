@@ -1038,6 +1038,12 @@ body {
   50%       { transform: translateY(-6px); }
 }
 
+/* iPhone SE and other short viewports — tighten home so all nav buttons stay above fold */
+@media (max-height: 700px) {
+  .home { gap: 8px; }
+  .btn-big { padding: 14px 28px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .board-wrap, .home-champs, .rank-badge-home, .hud,
   .chapter-node, .comic-panel { animation: none; }
