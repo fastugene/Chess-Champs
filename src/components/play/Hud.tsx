@@ -49,7 +49,7 @@ export function Hud({
           <div className="hud-title">{chapter}</div>
           <div className="hud-sub">{title}</div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="hud-chips">
           <div
             className="chip rank-chip"
             style={{ color: rankColor, borderColor: rankColor }}

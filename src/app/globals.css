@@ -143,6 +143,15 @@ body {
   font-size: 17px;
   font-weight: 800;
 }
+/* chip cluster wraps to a 2nd row instead of clipping off the right edge */
+.hud-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;          /* allow shrink below content so chips wrap, not clip */
+}
 .chip {
   background: var(--panel);
   border-radius: 12px;
@@ -187,6 +196,17 @@ body {
 .board-wrap {
   width: min(94vw, 460px, 70vh);
   margin: 0 auto;
+}
+/* Laptop / wide landscape: column is capped at 540px, so grow the board by
+   height instead of width to use the extra vertical room. */
+@media (min-width: 820px) {
+  .board-wrap { width: min(540px, 78vh); }
+}
+
+/* Small phones (≤400px): tighten the HUD chips so they fit in fewer rows. */
+@media (max-width: 400px) {
+  .chip { padding: 6px 9px; font-size: 13px; }
+  .rank-chip { font-size: 11px; padding: 4px 8px; }
 }
 .board {
   width: 100%;
@@ -290,12 +310,22 @@ body {
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;      /* was center — centering clips tall cards */
   justify-content: center;
-  padding: 20px;
+  overflow-y: auto;            /* tall cards (recap) scroll instead of clipping */
+  -webkit-overflow-scrolling: touch;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
   z-index: 50;
   animation: fade 0.2s ease;
 }
+/* Re-center the card vertically when it fits; when it's taller than the
+   viewport, margin:auto yields to scrolling so the top stays reachable. */
+.overlay > .card,
+.overlay > .growth-explainer,
+.overlay > .name-pawn-modal,
+.overlay > .finale-card,
+.overlay > .evolve-cutscene,
+.overlay > .chapter-intro-card { margin-block: auto; }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 .card {
   background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
