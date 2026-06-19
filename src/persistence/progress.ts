@@ -4,6 +4,8 @@
  */
 import { get, set } from 'idb-keyval';
 import type { Chapter } from '@/curriculum/chapters';
+import { CHAPTERS, chapterForLevel, nextChapter } from '@/curriculum/chapters';
+import { levelExists, LAST_LEVEL_ID, FIRST_LEVEL_ID } from '@/curriculum/levels';
 import { BAND_ORDER, type Band } from '@/engine/difficulty';
 
 const KEY = 'chess-champs:progress:v1';
@@ -105,16 +107,79 @@ export async function saveProgress(p: Progress): Promise<void> {
   }
 }
 
-/** Mark a level complete, award XP, and power up a Champ. Returns new progress. */
+/** First level of the next unlocked chapter after `chapterId`, or null if none. */
+function firstLevelOfNextChapter(p: Progress, chapterId: number): number | null {
+  const nxt = nextChapter(chapterId);
+  if (!nxt || !p.unlockedChapters.includes(nxt.id)) return null;
+  return nxt.levelIds.find(levelExists) ?? null;
+}
+
+/**
+ * The level the player should resume into: their current level clamped to a real
+ * level whose chapter is unlocked. Prevents `currentLevel` from outrunning the
+ * unlocked chapters (so `/play` and `/campaign` always agree) and handles the
+ * past-campaign-end overflow (e.g. 31 → 30). If the clamped level is in an
+ * already-mastered chapter and the next chapter is unlocked, jumps to the next
+ * chapter so the HUD always has a live goal to track.
+ */
+export function resumeLevel(p: Progress): number {
+  const maxUnlocked = Math.max(1, ...p.unlockedChapters);
+  let lvl = Math.min(Math.max(p.currentLevel, FIRST_LEVEL_ID), LAST_LEVEL_ID);
+  while (lvl > FIRST_LEVEL_ID && chapterForLevel(lvl).id > maxUnlocked) lvl--;
+  const ch = chapterForLevel(lvl);
+  if (p.chaptersMastered.includes(ch.id)) {
+    const next = firstLevelOfNextChapter(p, ch.id);
+    if (next != null) return next;
+  }
+  return lvl;
+}
+
+/**
+ * Next level to play after winning `levelId`. Advances to the next level when it
+ * exists AND its chapter is unlocked; otherwise cycles within the current
+ * chapter's levels (for variety) until that chapter is mastered and the next
+ * unlocks. Never advances into a locked chapter. If the current chapter is already
+ * mastered, skips remaining same-chapter levels and jumps to the next chapter.
+ */
+export function nextPlayableLevel(p: Progress, levelId: number): number {
+  const currentCh = chapterForLevel(levelId);
+  if (p.chaptersMastered.includes(currentCh.id)) {
+    const next = firstLevelOfNextChapter(p, currentCh.id);
+    if (next != null) return next;
+  }
+  const nextId = levelId + 1;
+  if (levelExists(nextId) && p.unlockedChapters.includes(chapterForLevel(nextId).id)) {
+    return nextId;
+  }
+  const ids = currentCh.levelIds.filter(levelExists);
+  const idx = ids.indexOf(levelId);
+  return ids[(idx + 1) % ids.length] ?? levelId;
+}
+
+/** Whether every chapter has been mastered (campaign complete). */
+export function isCampaignComplete(p: Progress): boolean {
+  return CHAPTERS.every((c) => p.chaptersMastered.includes(c.id));
+}
+
+/**
+ * Mark a level finished, award XP, power up a Champ. Advances `currentLevel` on a
+ * win, OR when the just-played chapter is now mastered (mastery can land on a
+ * losing/drawing game — stars are cumulative — and the player has earned the next
+ * chapter, so the "Next Chapter!" recap button must actually move them forward).
+ * A plain loss/draw in an unmastered chapter still earns XP but never advances.
+ * Never past a locked chapter. Returns new progress.
+ */
 export async function completeLevel(
   levelId: number,
   xpGained: number,
   champId?: string,
+  won = true,
 ): Promise<Progress> {
   const p = await loadProgress();
   if (!p.levelsCompleted.includes(levelId)) p.levelsCompleted.push(levelId);
   p.xp += xpGained;
-  p.currentLevel = Math.max(p.currentLevel, levelId + 1);
+  const chapterMastered = p.chaptersMastered.includes(chapterForLevel(levelId).id);
+  if (won || chapterMastered) p.currentLevel = nextPlayableLevel(p, levelId);
   if (champId) {
     p.champPower[champId] = Math.min(11, (p.champPower[champId] ?? 1) + 1);
   }
@@ -144,24 +209,48 @@ export async function addStar(chapterId: number, starGoal: number): Promise<Prog
 
 /**
  * Award in-play rewards from one move's detected events in a single load/save:
- * always add the scaled XP, add one star if the move landed this chapter's
- * tactic (capped at the goal), and power up each champ whose tactic fired.
- * Combining them avoids a load/save race between separate calls on the same event.
+ * add one star if the move landed this chapter's tactic (capped at the goal),
+ * and power up each champ whose tactic fired (pawn morph / champ pips).
+ * Rank XP is deliberately NOT awarded here — rank comes only from finishing
+ * games (see completeLevel), so one capture moves exactly one bar (the champ's).
+ * Combining star + champ in one load/save avoids a race on the same event.
  */
 export async function awardPlayRewards(opts: {
   chapterId: number;
   starGoal: number;
   addStar: boolean;
-  xp: number;
   champIds?: string[];
-}): Promise<{ progress: Progress; champPowerBefore: Record<string, number>; oldPawnXp: number }> {
+}): Promise<{
+  progress: Progress;
+  champPowerBefore: Record<string, number>;
+  oldPawnXp: number;
+  /** True only on the move that crosses the chapter's star goal (drives the celebration). */
+  chapterMastered: boolean;
+  /** Chapter id newly unlocked by that mastery, if any. */
+  unlockedNext?: number;
+}> {
   const p = await loadProgress();
   const champPowerBefore: Record<string, number> = {};
   const oldPawnXp = p.pawnXp ?? 0;
-  if (opts.xp > 0) p.xp += opts.xp;
+  let chapterMastered = false;
+  let unlockedNext: number | undefined;
   if (opts.addStar) {
     const current = p.chapterStars[opts.chapterId] ?? 0;
     p.chapterStars[opts.chapterId] = Math.min(opts.starGoal, current + 1);
+    // Stars are the single chapter gate: the moment the goal is reached, master
+    // the chapter and unlock the next — immediately, not only at game-over.
+    if (
+      p.chapterStars[opts.chapterId] >= opts.starGoal &&
+      !p.chaptersMastered.includes(opts.chapterId)
+    ) {
+      p.chaptersMastered.push(opts.chapterId);
+      chapterMastered = true;
+      const nxt = nextChapter(opts.chapterId);
+      if (nxt && !p.unlockedChapters.includes(nxt.id)) {
+        p.unlockedChapters.push(nxt.id);
+        unlockedNext = nxt.id;
+      }
+    }
   }
   for (const id of opts.champIds ?? []) {
     if (id === 'pawn') {
@@ -173,7 +262,7 @@ export async function awardPlayRewards(opts: {
     }
   }
   await saveProgress(p);
-  return { progress: p, champPowerBefore, oldPawnXp };
+  return { progress: p, champPowerBefore, oldPawnXp, chapterMastered, unlockedNext };
 }
 
 /** Power up a single champ. Returns new progress. */
@@ -221,9 +310,13 @@ export function starsFor(p: Progress, chapterId: number): number {
   return p.chapterStars[chapterId] ?? 0;
 }
 
-/** Both goals met: tactic landed `starGoal` times AND XP threshold reached. */
+/**
+ * Chapter mastery gate: land the chapter's tactic `starGoal` times. Stars are the
+ * single source of truth for progression — XP is a global rank score only, never a
+ * gate (it used to double-gate here, which let the HUD show nonsense like 1270/300).
+ */
 export function isChapterComplete(p: Progress, chapter: Chapter): boolean {
-  return starsFor(p, chapter.id) >= chapter.starGoal && p.xp >= chapter.xpGoal;
+  return starsFor(p, chapter.id) >= chapter.starGoal;
 }
 
 // ── Parent settings (stored under a separate key, never shown to the kid) ──

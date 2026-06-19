@@ -16,9 +16,10 @@ export function StarRow({ stars, goal }: { stars: number; goal: number }) {
 }
 
 /**
- * The visible mission tracker for the active chapter: the tactic star bar plus
- * the XP bar. `compact` renders the HUD chip version; the default renders the
- * fuller panel used in the primer and recap.
+ * The visible mission tracker for the active chapter. The tactic star bar is the
+ * single goal (landing the tactic `starGoal` times masters the chapter); XP is a
+ * global score shown alongside, never a gate. `compact` renders the HUD chip; the
+ * default renders the fuller panel used in the primer and recap.
  */
 export function MissionTracker({
   chapter,
@@ -31,13 +32,12 @@ export function MissionTracker({
   xp: number;
   compact?: boolean;
 }) {
-  const xpPct = Math.min(100, Math.round((xp / chapter.xpGoal) * 100));
+  const starPct = Math.min(100, Math.round((stars / chapter.starGoal) * 100));
 
   if (compact) {
     return (
       <div className="chip mission-chip" title={`${chapter.tactic} mastery`}>
         <StarRow stars={stars} goal={chapter.starGoal} />
-        <span className="mission-xp">{xp}/{chapter.xpGoal} XP</span>
       </div>
     );
   }
@@ -51,12 +51,10 @@ export function MissionTracker({
         </span>
       </div>
       <div className="mission-xp-row">
-        <div className="xp-bar">
-          <div className="xp-fill" style={{ width: `${xpPct}%` }} />
+        <div className="xp-bar" title="Tactic mastery progress">
+          <div className="xp-fill" style={{ width: `${starPct}%` }} />
         </div>
-        <span className="xp-label">
-          XP {xp} / {chapter.xpGoal}
-        </span>
+        <span className="xp-label">🏆 {xp} Rank XP</span>
       </div>
     </div>
   );

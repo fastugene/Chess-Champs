@@ -1,6 +1,7 @@
 'use client';
 
 import { ChampCard } from '@/components/champs/ChampCard';
+import { PawnRoadmap } from '@/components/champs/PawnRoadmap';
 import { MissionTracker } from '@/components/play/MissionTracker';
 import type { Chapter } from '@/curriculum/chapters';
 import type { TacticEvent } from '@/chess/tactics/detect';
@@ -18,6 +19,10 @@ export interface RecapData {
   topEvent?: TacticEvent;
   /** Son's custom pawn name, if set. */
   pawnCustomName?: string;
+  /** Current total pawnXp after this game (drives the morph roadmap). */
+  pawnXp?: number;
+  /** Pawn XP earned this game (for the "+N Pawn XP" tick); 0 = hide. */
+  pawnXpGained?: number;
 }
 
 const TIPS: Record<number, string> = {
@@ -41,6 +46,8 @@ export function RecapCard({
   chapterMastered,
   topEvent,
   pawnCustomName,
+  pawnXp,
+  pawnXpGained,
   onPlayAgain,
   onHome,
 }: RecapData & { onPlayAgain: () => void; onHome: () => void }) {
@@ -118,9 +125,22 @@ export function RecapCard({
 
         </div>
 
+        {pawnXp != null && (
+          <div className="recap-pawn-strip">
+            {pawnXpGained != null && pawnXpGained > 0 && (
+              <div className="recap-pawn-gain">+{pawnXpGained} Pawn XP ⚔️</div>
+            )}
+            <PawnRoadmap xp={pawnXp} compact />
+          </div>
+        )}
+
         <div className="card-actions" style={{ marginTop: 14 }}>
           <button className="btn btn-ghost" onClick={onHome}>Home</button>
-          <button className="btn btn-primary" onClick={onPlayAgain}>Play Again</button>
+          {chapterMastered ? (
+            <button className="btn btn-primary" onClick={onPlayAgain}>🚀 Next Chapter!</button>
+          ) : (
+            <button className="btn btn-primary" onClick={onPlayAgain}>Play Again</button>
+          )}
         </div>
       </div>
     </div>

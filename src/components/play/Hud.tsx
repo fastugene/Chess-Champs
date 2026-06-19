@@ -12,6 +12,7 @@ export function Hud({
   missionChapter,
   stars,
   chapterXp,
+  pawnXp,
   onInfo,
   rankDisplay,
   rankColor,
@@ -24,6 +25,7 @@ export function Hud({
   missionChapter: Chapter;
   stars: number;
   chapterXp: number;
+  pawnXp?: number;
   onInfo: () => void;
   rankDisplay: string;
   rankColor: string;
@@ -61,6 +63,11 @@ export function Hud({
           <div className="chip" title="Material captured">
             ⚔️ {captured}
           </div>
+          {pawnXp != null && (
+            <div className="chip pawn-xp-chip" title="Pawn XP — safe captures power up your Pawn">
+              🐾 {pawnXp}
+            </div>
+          )}
           <button className="chip" onClick={onHint} disabled={hintsLeft <= 0} aria-label="Hint">
             💡 {hintsLeft}
           </button>

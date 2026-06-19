@@ -1,6 +1,5 @@
 /**
- * Campaign levels — 20 levels across 5 chapters for Phase 2.
- * Phase 3 fills the remaining 10 to reach the full 30-level curriculum.
+ * Campaign levels — 30 levels across 8 chapters.
  */
 import type { Band } from '@/engine/difficulty';
 import type { Color } from 'chess.js';
@@ -370,4 +369,10 @@ export function getLevel(id: number): Level {
   return LEVELS.find((l) => l.id === id) ?? LEVELS[0];
 }
 
+/** Whether a level with this id actually exists in the campaign. */
+export function levelExists(id: number): boolean {
+  return LEVELS.some((l) => l.id === id);
+}
+
 export const FIRST_LEVEL_ID = LEVELS[0].id;
+export const LAST_LEVEL_ID = LEVELS[LEVELS.length - 1].id;

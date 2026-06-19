@@ -1,7 +1,7 @@
 'use client';
 
 import { ChampArt } from './ChampArt';
-import { gadgetName, pawnXpToLevel, type GadgetId, type PawnForm } from '@/progression/champs';
+import { gadgetName, pawnFormMeta, type GadgetId, type PawnForm } from '@/progression/champs';
 
 const FORM_NAME: Record<PawnForm, string> = {
   pawn:   'Scrapper',
@@ -27,7 +27,6 @@ export function EvolveCutscene({
   pawnCustomName?: string;
   onDone: () => void;
 }) {
-  const level = pawnXpToLevel(pawnXp);
   const champName = pawnCustomName
     ? form === 'pawn' ? pawnCustomName : `${pawnCustomName} the ${capitalize(form)}`
     : FORM_NAME[form];
@@ -43,7 +42,7 @@ export function EvolveCutscene({
           <ChampArt champId="pawn" size={140} power={pawnXp} showGlow />
         </div>
         <div className="evolve-name">{champName}</div>
-        <div className="evolve-power">⚡ Power Level {level}</div>
+        <div className="evolve-power">{pawnFormMeta(form).emoji} {pawnFormMeta(form).label} Form!</div>
         {newGadget && (
           <div className="evolve-gadget">
             <span className="evolve-gadget-label">New gadget unlocked!</span>

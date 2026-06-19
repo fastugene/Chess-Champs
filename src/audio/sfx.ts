@@ -120,6 +120,87 @@ export function playSound(name: SoundName): void {
   }
 }
 
+// ── Intro "Summoning" sounds ──────────────────────────────────────────────
+// Richer than the gameplay blips: frequency sweeps + a noise burst for the
+// impact. Used only by the first-launch intro animation. Fired from a tap
+// (resumeAudio already called), so the AudioContext is live.
+
+/** A short burst of filtered white noise — the body of a whoosh / explosion. */
+function noiseBurst(at: number, dur: number, vol: number, hp: number, lpStart: number, lpEnd: number): void {
+  const c = getCtx();
+  if (!c) return;
+  const frames = Math.floor(c.sampleRate * dur);
+  const buf = c.createBuffer(1, frames, c.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  const hpf = c.createBiquadFilter();
+  hpf.type = 'highpass';
+  hpf.frequency.value = hp;
+  const lpf = c.createBiquadFilter();
+  lpf.type = 'lowpass';
+  const now = c.currentTime;
+  lpf.frequency.setValueAtTime(lpStart, now + at);
+  lpf.frequency.exponentialRampToValueAtTime(lpEnd, now + at + dur);
+  const gain = c.createGain();
+  gain.gain.setValueAtTime(0.0001, now + at);
+  gain.gain.exponentialRampToValueAtTime(vol, now + at + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + at + dur);
+  src.connect(hpf).connect(lpf).connect(gain).connect(c.destination);
+  src.start(now + at);
+  src.stop(now + at + dur + 0.02);
+}
+
+/** A pitched oscillator that glides from one frequency to another (the "swish"). */
+function sweep(at: number, dur: number, f0: number, f1: number, type: OscillatorType, vol: number): void {
+  if (muted) return;
+  const c = getCtx();
+  if (!c) return;
+  const now = c.currentTime;
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(f0, now + at);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(1, f1), now + at + dur);
+  gain.gain.setValueAtTime(0.0001, now + at);
+  gain.gain.exponentialRampToValueAtTime(vol, now + at + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + at + dur);
+  osc.connect(gain).connect(c.destination);
+  osc.start(now + at);
+  osc.stop(now + at + dur + 0.02);
+}
+
+/** Pieces streaking in — layered rising whooshes. */
+export function playIntroWhoosh(): void {
+  if (muted) return;
+  noiseBurst(0, 0.5, 0.06, 600, 800, 5000);
+  sweep(0, 0.45, 240, 1200, 'sawtooth', 0.05);
+  sweep(0.12, 0.4, 180, 900, 'sawtooth', 0.04);
+}
+
+/** The collision — deep boom + bright crack + a falling zap. */
+export function playIntroImpact(): void {
+  if (muted) return;
+  noiseBurst(0, 0.4, 0.22, 200, 9000, 400);   // explosion body
+  play([
+    { freq: 70, at: 0, dur: 0.45, type: 'sine', vol: 0.3 },   // sub thump
+    { freq: 110, at: 0, dur: 0.28, type: 'square', vol: 0.14 },
+  ]);
+  sweep(0.02, 0.22, 2200, 300, 'sawtooth', 0.12); // electric zap down
+}
+
+/** Champs revealed — bright ascending sparkle chime. */
+export function playIntroReveal(): void {
+  if (muted) return;
+  play([
+    { freq: 784, at: 0, dur: 0.16, type: 'triangle', vol: 0.16 },
+    { freq: 1047, at: 0.1, dur: 0.16, type: 'triangle', vol: 0.16 },
+    { freq: 1319, at: 0.2, dur: 0.16, type: 'triangle', vol: 0.16 },
+    { freq: 1568, at: 0.3, dur: 0.3, type: 'triangle', vol: 0.18 },
+  ]);
+}
+
 /**
  * Escalating kill-streak sting (Brawl Stars "rising pitch" + Dota 2 "deep hit").
  * Each successive kill (level 2, 3, 4, …) plays higher, brighter, and with more

@@ -3,11 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampArt } from '@/components/champs/ChampArt';
+import { PawnRoadmap } from '@/components/champs/PawnRoadmap';
+import { GrowthExplainer } from '@/components/champs/GrowthExplainer';
 import { resumeAudio } from '@/audio/sfx';
 import { unlockSpeech } from '@/audio/speech';
 import { loadProgress } from '@/persistence/progress';
 import { getRank } from '@/progression/ranks';
-import { getChampDisplayName, pawnXpToLevel } from '@/progression/champs';
+import { getChampDisplayName, pawnFormMeta, pawnStage } from '@/progression/champs';
+import { IntroAnimation, hasSeenIntro, hasSeenIntroThisSession } from '@/components/onboarding/IntroAnimation';
 
 export default function Home() {
   const router = useRouter();
@@ -16,8 +19,19 @@ export default function Home() {
   const [rankColor, setRankColor] = useState('#a07850');
   const [pawnXp, setPawnXp] = useState(0);
   const [pawnCustomName, setPawnCustomName] = useState<string | undefined>(undefined);
+  const [showGrowth, setShowGrowth] = useState(false);
+  // 'init' = deciding (renders a dark placeholder so home never flashes first),
+  // 'intro' = playing the cinematic, 'home' = the start screen.
+  const [phase, setPhase] = useState<'init' | 'intro' | 'home'>('init');
+  const [introSkippable, setIntroSkippable] = useState(false);
 
   useEffect(() => {
+    if (hasSeenIntroThisSession()) {
+      setPhase('home');
+    } else {
+      setIntroSkippable(hasSeenIntro());
+      setPhase('intro');
+    }
     void loadProgress().then((p) => {
       const rank = getRank(p.xp, p.chaptersMastered);
       setRankDisplay(rank.displayName);
@@ -49,6 +63,23 @@ export default function Home() {
     tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 1500);
   };
 
+  // Deciding which screen to show — a dark placeholder (matches the intro/home
+  // backdrop) so the start screen never flashes before the cinematic.
+  if (phase === 'init') {
+    return <div className="intro-placeholder" aria-hidden />;
+  }
+
+  // The cinematic plays in place of home, then flows straight into it on done.
+  if (phase === 'intro') {
+    return (
+      <IntroAnimation
+        skippable={introSkippable}
+        pawnName={pawnCustomName}
+        onDone={() => setPhase('home')}
+      />
+    );
+  }
+
   return (
     <div className="home">
       <div
@@ -76,8 +107,14 @@ export default function Home() {
         <ChampArt champId="queen" size={86} />
       </div>
       {pawnCustomName && (
-        <div className="pawn-name-tag">{pawnCustomName} · Lv {pawnXpToLevel(pawnXp)}</div>
+        <div className="pawn-name-tag">{pawnCustomName} · {pawnFormMeta(pawnStage(pawnXp).form).label}</div>
       )}
+
+      <PawnRoadmap xp={pawnXp} />
+
+      <button className="growth-help-btn" onClick={() => setShowGrowth(true)}>
+        ❓ How you grow
+      </button>
 
       <div className="tagline">Collect Champs. Climb the ranks. Become a chess legend!</div>
 
@@ -109,6 +146,8 @@ export default function Home() {
           ⚙️
         </button>
       </div>
+
+      {showGrowth && <GrowthExplainer pawnXp={pawnXp} onClose={() => setShowGrowth(false)} />}
     </div>
   );
 }

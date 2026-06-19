@@ -116,41 +116,45 @@ export interface PawnStage {
 }
 
 /**
- * Cumulative pawnXp needed to reach each power level (index i → power i+1).
- * Calibrated so Queen form (power 11) is only reached near the end of the
- * 30-level campaign (~90 games at ~2 win-material events/game = ~180 total).
- *
- * Morph targets: Buckler ≈ Ch1/2 boundary, Knight ≈ Ch3, Bishop ≈ Ch5,
- * Rook ≈ Ch7, Queen ≈ Ch8 end.
+ * The 5 morph forms in order, and the round pawnXp milestone where each unlocks.
+ * +1 pawnXp per safe capture → a new form every 50 grabs. Kid-readable: "50 to
+ * become a Knight!". Queen (the top form) lands near the end of the campaign.
  */
-export const PAWN_THRESHOLDS: readonly number[] = [0, 18, 38, 58, 76, 94, 112, 130, 148, 166, 180];
+export const PAWN_FORM_ORDER: readonly PawnForm[] = ['pawn', 'knight', 'bishop', 'rook', 'queen'];
+export const PAWN_FORM_XP: readonly number[] = [0, 50, 100, 150, 200];
 
-/** Returns the visual power level (1–11) from raw accumulated pawnXp. */
-export function pawnXpToLevel(xp: number): number {
-  for (let i = PAWN_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (xp >= PAWN_THRESHOLDS[i]) return i + 1;
+/** One signature gadget per form, gained on that morph (cumulative across forms). */
+const FORM_GADGET: Record<PawnForm, GadgetId> = {
+  pawn:   'buckler',
+  knight: 'hooves',
+  bishop: 'lance',
+  rook:   'spear',
+  queen:  'crown',
+};
+
+/** Returns the current form index (1–5) from raw accumulated pawnXp. */
+export function pawnFormIndex(xp: number): number {
+  for (let i = PAWN_FORM_XP.length - 1; i >= 0; i--) {
+    if (xp >= PAWN_FORM_XP[i]) return i + 1;
   }
   return 1;
 }
 
-/** Returns 0–1 progress within the current power level (for the XP bar fill). */
+/** Returns 0–1 progress toward the next form (for the XP bar fill). */
 export function pawnXpProgress(xp: number): number {
-  const level = pawnXpToLevel(xp);
-  if (level >= 11) return 1;
-  const start = PAWN_THRESHOLDS[level - 1];
-  const end = PAWN_THRESHOLDS[level];
+  const idx = pawnFormIndex(xp);
+  if (idx >= PAWN_FORM_XP.length) return 1;
+  const start = PAWN_FORM_XP[idx - 1];
+  const end = PAWN_FORM_XP[idx];
   return (xp - start) / (end - start);
 }
 
 /** Maps raw pawnXp to the Pawn's current form + cumulative gadgets. */
 export function pawnStage(xp: number): PawnStage {
-  const level = pawnXpToLevel(xp);
-  if (level <= 2) return { form: 'pawn',   gadgets: [] };
-  if (level <= 4) return { form: 'pawn',   gadgets: ['buckler'] };
-  if (level <= 6) return { form: 'knight', gadgets: ['buckler', 'hooves'] };
-  if (level <= 8) return { form: 'bishop', gadgets: ['buckler', 'hooves', 'lance'] };
-  if (level <= 10) return { form: 'rook',  gadgets: ['buckler', 'hooves', 'lance', 'spear'] };
-  return { form: 'queen', gadgets: ['buckler', 'hooves', 'lance', 'spear', 'crown'] };
+  const idx = pawnFormIndex(xp);
+  const form = PAWN_FORM_ORDER[idx - 1];
+  const gadgets = PAWN_FORM_ORDER.slice(0, idx).map((f) => FORM_GADGET[f]);
+  return { form, gadgets };
 }
 
 const GADGET_NAME: Record<GadgetId, string> = {
@@ -175,4 +179,41 @@ export function crossedPawnMorph(oldXp: number, newXp: number): (PawnStage & { n
 
 export function gadgetName(id: GadgetId): string {
   return GADGET_NAME[id];
+}
+
+/** Display label + emoji for each pawn form, for the roadmap track. */
+const FORM_META: Record<PawnForm, { label: string; emoji: string }> = {
+  pawn:   { label: 'Pawn',   emoji: '🛡️' },
+  knight: { label: 'Knight', emoji: '🐴' },
+  bishop: { label: 'Bishop', emoji: '🏹' },
+  rook:   { label: 'Rook',   emoji: '🗼' },
+  queen:  { label: 'Queen',  emoji: '👑' },
+};
+
+export function pawnFormMeta(form: PawnForm): { label: string; emoji: string } {
+  return FORM_META[form];
+}
+
+export interface PawnFormStop {
+  form: PawnForm;
+  /** Form index (1–5) at which this form appears. */
+  atLevel: number;
+  /** Cumulative pawnXp needed to reach this form. */
+  atXp: number;
+}
+
+/**
+ * The ordered morph roadmap: each form with the index + pawnXp where it unlocks.
+ * One source of truth shared by the roadmap UI and the "Next:" label.
+ */
+export function pawnForms(): PawnFormStop[] {
+  return PAWN_FORM_ORDER.map((form, i) => ({ form, atLevel: i + 1, atXp: PAWN_FORM_XP[i] }));
+}
+
+/** The next form the pawn will morph into, or null if already at the final form. */
+export function nextPawnForm(xp: number): PawnFormStop | null {
+  const current = pawnStage(xp).form;
+  const stops = pawnForms();
+  const idx = stops.findIndex((s) => s.form === current);
+  return stops[idx + 1] ?? null;
 }

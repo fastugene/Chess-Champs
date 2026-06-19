@@ -205,7 +205,8 @@ export function ChapterPrimer({
           <div className="primer-beat" key="b4">
             <h2>Your Mission</h2>
             <p>
-              Master the <b>{chapter.tactic}</b>! Clear both bars to unlock the next chapter:
+              Master the <b>{chapter.tactic}</b>! Land it <b>{chapter.starGoal} times</b> to
+              unlock the next chapter:
             </p>
             <MissionTracker chapter={chapter} stars={stars} xp={xp} />
             <p className="never-stuck">
@@ -215,6 +216,11 @@ export function ChapterPrimer({
         )}
 
         <div className="card-actions">
+          {step < LAST && (
+            <button className="btn btn-ghost primer-skip" onClick={onClose}>
+              Skip
+            </button>
+          )}
           {step > 0 && (
             <button className="btn btn-ghost" onClick={back}>
               ◀ Back

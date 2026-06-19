@@ -1,4 +1,4 @@
-import { CHAMPS, pawnStage, pawnXpToLevel } from '@/progression/champs';
+import { CHAMPS, pawnStage, pawnFormIndex } from '@/progression/champs';
 
 /**
  * Champ art — the chess piece IS the character.
@@ -21,7 +21,7 @@ export function ChampArt({
   size?: number;
   showGlow?: boolean;
   /**
-   * For the pawn champ: raw pawnXp (0–180+). For all other champs: power level 1–11.
+   * For the pawn champ: raw pawnXp (0–200+). For all other champs: power level 1–11.
    * Drives the Pawn's morph journey + gadget stacking.
    */
   power?: number;
@@ -33,9 +33,12 @@ export function ChampArt({
   const foot = shade(color, -0.52);
   const outline = '#14172e';
   const gid = `glow-${champId}-${power ?? 0}`;
-  // For pawn, convert raw XP to level for the glow opacity calculation.
-  const displayLevel = champId === 'pawn' && power != null ? pawnXpToLevel(power) : (power ?? 1);
-  const glowOpacity = power != null ? Math.min(0.85, 0.35 + (displayLevel / 11) * 0.5) : 0.55;
+  // Glow scales with growth: pawn by form index (1–5), other champs by power (1–11).
+  const glowFraction =
+    champId === 'pawn' && power != null
+      ? (pawnFormIndex(power) - 1) / 4
+      : ((power ?? 1) - 1) / 10;
+  const glowOpacity = power != null ? Math.min(0.85, 0.35 + glowFraction * 0.5) : 0.55;
 
   // For the pawn champ, morph through forms based on raw pawnXp.
   const stage = champId === 'pawn' && power != null ? pawnStage(power) : null;

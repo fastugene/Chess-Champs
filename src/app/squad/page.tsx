@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChampCard } from '@/components/champs/ChampCard';
+import { GrowthExplainer } from '@/components/champs/GrowthExplainer';
 import { CHAMPS } from '@/progression/champs';
 import { loadProgress, type Progress } from '@/persistence/progress';
 import { DEFAULT_PROGRESS } from '@/persistence/progress';
@@ -13,6 +14,7 @@ const SQUAD_ORDER = ['pawn', 'knight', 'queen', 'bishop', 'rook', 'unseen'];
 export default function SquadPage() {
   const router = useRouter();
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
+  const [showGrowth, setShowGrowth] = useState(false);
 
   useEffect(() => {
     void loadProgress().then(setProgress);
@@ -32,6 +34,10 @@ export default function SquadPage() {
       <p className="squad-sub muted">
         Land a tactic in-game to unlock and power up its Champ.
       </p>
+
+      <button className="growth-help-btn" onClick={() => setShowGrowth(true)}>
+        ❓ How you grow
+      </button>
 
       <div className="squad-grid">
         {SQUAD_ORDER.map((id) => {
@@ -59,6 +65,10 @@ export default function SquadPage() {
           );
         })}
       </div>
+
+      {showGrowth && (
+        <GrowthExplainer pawnXp={progress.pawnXp ?? 0} onClose={() => setShowGrowth(false)} />
+      )}
     </div>
   );
 }
