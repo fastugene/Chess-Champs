@@ -210,7 +210,8 @@ function detectFork(grid: Grid, f: number, r: number, enemy: Color): boolean {
       hasKingOrBigger = true;
     } else if (PIECE_VALUE[t.type] >= 3) {
       valuableTargets++;
-      if (PIECE_VALUE[t.type] > attackerVal) hasKingOrBigger = true;
+      // >= so equal-value forks fire (e.g. knight-forks-two-knights).
+      if (PIECE_VALUE[t.type] >= attackerVal) hasKingOrBigger = true;
     }
   }
 

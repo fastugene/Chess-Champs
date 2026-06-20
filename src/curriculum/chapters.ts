@@ -1,8 +1,11 @@
 /**
  * Chapters group the campaign levels into skill arcs, each owned by a mentor
- * Champ and a single tactic to master. A chapter unlocks the next when BOTH
- * goals are met: land the tactic `starGoal` times (the 3-star bar) AND reach
- * `xpGoal` XP. This is the "never stuck" loop — XP always rises from playing.
+ * Champ and a single tactic to master. A chapter unlocks the next when the
+ * star goal is met: land a chapter tactic `starGoal` times (the 3-star bar).
+ * Stars are the single gate — XP is a global rank score only, not a chapter
+ * gate. `starEventTypes` lists every event type that counts toward this
+ * chapter's stars; include `win-material` as a fallback on chapters where the
+ * primary tactic is rare so progress is never fully blocked.
  *
  * Phase 2 ships Chapters 1–5 fully; Chapters 6–7 are stubbed for Phase 3.
  */
@@ -34,7 +37,6 @@ export interface Chapter {
   demo: { fen: string; highlight: Square[]; caption: string };
   tutorial: TutorialScript;
   starGoal: number;
-  xpGoal: number;
   starEventTypes: TacticEvent['type'][];
   levelIds: number[];
 }
@@ -80,7 +82,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 300,
     starEventTypes: ['win-material'],
     levelIds: [1, 2, 3, 4],
   },
@@ -125,7 +126,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 700,
     starEventTypes: ['checkmate'],
     levelIds: [5, 6, 7, 8],
   },
@@ -171,7 +171,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 1200,
     starEventTypes: ['castle', 'win-material', 'fork'],
     levelIds: [9, 10, 11, 12],
   },
@@ -216,7 +215,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 2000,
     starEventTypes: ['fork'],
     levelIds: [13, 14, 15, 16, 17],
   },
@@ -261,7 +259,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 3000,
     starEventTypes: ['pin'],
     levelIds: [18, 19, 20, 21],
   },
@@ -274,13 +271,16 @@ export const CHAPTERS: Chapter[] = [
     tactic: 'Skewer',
     concept: 'A skewer attacks the BIG piece first! It has to run -- then you grab the smaller piece hiding behind it!',
     demo: {
-      // White: Kh1, Ra1 — Black: Ka8, Ra6. Ra1→a8+ skewers king, exposing the rook.
-      fen: 'k7/8/r7/8/8/8/8/R6K w - - 0 1',
-      highlight: ['a1', 'a8', 'a6'],
-      caption: 'The rook attacks the king -- it must run. Then the rook on a6 is free for the taking!',
+      // White Rg1, Black Ka5, Black Ra8. Rg1→a1 skewers the king — it must
+      // flee the file, leaving the rook on a8 free for the taking.
+      fen: 'r7/8/8/k7/8/8/8/6RK w - - 0 1',
+      highlight: ['g1', 'a1', 'a5', 'a8'],
+      caption: 'The rook slides to a1 -- the king must run! Then the rook on a8 is free for the taking!',
     },
     tutorial: {
-      fen: 'k7/8/r7/8/8/8/8/R6K w - - 0 1',
+      // White Rg1, Black Ka5, Black Ra8 — clear file between a1 and the king.
+      // Move: Rg1→a1 puts the king in check (skewer). King flees, Rxa8 wins.
+      fen: 'r7/8/8/k7/8/8/8/6RK w - - 0 1',
       intro: {
         text: "Harpoon the Rook here! I fire down the whole file and skewer big pieces to grab the treasure behind them!",
         voice: 'tut-skewer-intro',
@@ -290,24 +290,25 @@ export const CHAPTERS: Chapter[] = [
         voice: 'tut-skewer-what',
       },
       demo: {
-        from: 'a1',
-        to: 'a8',
-        caption: 'Rook charges to a8 -- the king must run! Then the rook on a6 is yours for free.',
+        from: 'g1',
+        to: 'a1',
+        caption: 'Rook slides to a1 -- the king is in check and must run! Then the rook on a8 is yours for free.',
         voice: 'tut-skewer-watch',
       },
       practice: {
-        prompt: 'Skewer the king! Move the rook to a8 to force it to run!',
+        prompt: 'Skewer the king! Slide the rook from g1 to a1!',
         voice: 'tut-skewer-try',
-        from: 'a1',
-        to: 'a8',
-        success: 'SKEWER! The king must move, then you grab the rook behind it. Free piece!',
+        from: 'g1',
+        to: 'a1',
+        success: 'SKEWER! The king must move, then you grab the rook on a8. Free piece!',
         successVoice: 'tut-skewer-yes',
-        nudge: 'Move your rook from a1 all the way to a8 to attack the king!',
+        nudge: 'Slide your rook from g1 all the way to a1 to attack the king on a5!',
       },
     },
     starGoal: 3,
-    xpGoal: 4000,
-    starEventTypes: ['skewer'],
+    // win-material as fallback: skewer is rare enough in kids' games that a
+    // pure-skewer gate could soft-wall. Safe captures still count toward stars.
+    starEventTypes: ['skewer', 'win-material'],
     levelIds: [22, 23, 24],
   },
 
@@ -351,7 +352,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 5500,
     starEventTypes: ['discovered-attack'],
     levelIds: [25, 26, 27],
   },
@@ -396,7 +396,6 @@ export const CHAPTERS: Chapter[] = [
       },
     },
     starGoal: 3,
-    xpGoal: 7000,
     starEventTypes: ['checkmate', 'win-material'],
     levelIds: [28, 29, 30],
   },

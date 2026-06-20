@@ -213,8 +213,13 @@ export default function PlayPage() {
       }
       const p = await recordGameResult(gameResult);
       setProgress(p);
-      // Advance levelId so HUD + chapter reflect the new level before recap shows.
-      if (p.currentLevel !== levelId) setLevelId(p.currentLevel);
+      // Use resumeLevel rather than p.currentLevel directly. For checkmate chapters
+      // (Ch2), completeLevel runs before the checkmate star is awarded (deferred to
+      // avoid a write race), so currentLevel may cycle within the old chapter instead
+      // of jumping to the next. resumeLevel sees the fully-saved post-mastery state
+      // and always routes to the correct chapter.
+      const resumedLevel = resumeLevel(p);
+      if (resumedLevel !== levelId) setLevelId(resumedLevel);
       // First game: queue the name-your-pawn modal to show AFTER recap is dismissed.
       if (!p.pawnCustomName && p.levelsCompleted.length === 1) {
         pendingNameModal.current = true;

@@ -95,7 +95,7 @@ export const LEVELS: Level[] = [
     mentor: 'queen',
     intro: "Tougher opponent, same mission. Keep the pressure on and find that mate!",
     goalText: 'Checkmate with Queen and King working together.',
-    botBand: 'medium',
+    botBand: 'easy',
     playerColor: 'w',
   },
   {
