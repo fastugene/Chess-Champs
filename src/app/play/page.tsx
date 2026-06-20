@@ -132,9 +132,10 @@ export default function PlayPage() {
     // Champ growth + stars: each tactic event powers up its matching Champ and,
     // if it's this chapter's tactic, earns a star. Rank XP is NOT touched here —
     // rank comes only from finishing games (clean split, see completeLevel).
-    // Checkmate is excluded — its reward is the game-over win bonus.
+    // Checkmate star is awarded inside the game-over handler (serial after completeLevel)
+    // to avoid a concurrent write race — both effects fire in the same render on checkmate.
     const nonMate = events.filter((e) => e.type !== 'checkmate');
-    const landed = events.some((e) => chapter.starEventTypes.includes(e.type));
+    const landed = events.some((e) => e.type !== 'checkmate' && chapter.starEventTypes.includes(e.type));
     // Collect distinct champIds from this move's events (deduped).
     const champIds = [...new Set(nonMate.map((e) => e.champId).filter(Boolean) as string[])];
     if (!landed && champIds.length === 0) return;
@@ -182,6 +183,18 @@ export default function PlayPage() {
       // Only a win (or finishing a now-mastered chapter) advances the level;
       // losses/draws still earn XP (growth-framed).
       await completeLevel(level.id, xp, championId, won);
+      // Chapters gated on checkmate (Ch2) must award their star here, serially after
+      // completeLevel, not in the events effect — both fire in the same render on
+      // checkmate, causing a concurrent write race that drops the star.
+      if (won && chapter.starEventTypes.includes('checkmate')) {
+        const { chapterMastered: cm } = await awardPlayRewards({
+          chapterId: chapter.id,
+          starGoal: chapter.starGoal,
+          addStar: true,
+          champIds: [],
+        });
+        if (cm) masteredThisGame.current = true;
+      }
       const p = await recordGameResult(gameResult);
       setProgress(p);
       // Advance levelId so HUD + chapter reflect the new level before recap shows.
