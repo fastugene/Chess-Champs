@@ -11,7 +11,16 @@
 import { Chess } from 'chess.js';
 import { stockfishRankedMoves } from './stockfishClient';
 import { chooseBotMove, type SimpleMove } from './bot';
+import { minimaxMove } from './minimaxClient';
 import { BANDS, type Band } from './difficulty';
+
+/**
+ * Wall-clock budget for the minimax search when it runs in the Web Worker.
+ * Larger than bot.ts's 600 ms main-thread default because off-thread it can't
+ * freeze the UI — this buys the midgame search a few extra plies. Tunable: this
+ * is the bot's reply time, not a freeze; drop it if a kid finds it slow.
+ */
+const MINIMAX_BUDGET_MS = 1500;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,6 +69,9 @@ export async function getBotMove(fen: string, band: Band): Promise<SimpleMove | 
     return chooseBotMove(fen, band);
   }
 
-  await think;
-  return chooseBotMove(fen, band);
+  // Minimax bands run in a Web Worker (off the UI thread, so the board never
+  // freezes); the compute overlaps the "thinking" floor. minimaxMove falls back
+  // to the synchronous bot if the worker is unavailable.
+  const [move] = await Promise.all([minimaxMove(fen, band, MINIMAX_BUDGET_MS), think]);
+  return move;
 }

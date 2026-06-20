@@ -31,7 +31,7 @@ const TIER_XP: Record<RewardTier, number> = {
 };
 
 export interface TacticEvent {
-  type: 'capture' | 'win-material' | 'fork' | 'pin' | 'skewer' | 'discovered-attack' | 'check' | 'checkmate';
+  type: 'capture' | 'win-material' | 'fork' | 'pin' | 'skewer' | 'discovered-attack' | 'castle' | 'check' | 'checkmate';
   tier: RewardTier;
   /** Big, kid-readable headline. */
   label: string;
@@ -146,6 +146,19 @@ export function detectPlayerEvents(afterFen: string, move: Move): TacticEvent[] 
       label: 'DISCOVERED ATTACK!',
       sub: 'Hidden threat revealed!',
       champId: 'unseen',
+    });
+  }
+
+  // --- Castling (opening principle: tuck the king to safety) ---
+  // chess.js flags 'k'/'q' = king/queenside castle. Can't coincide with a
+  // capture, so it stands alone. Chapter 3 ("Opening Principles") rewards it.
+  if (move.flags.includes('k') || move.flags.includes('q')) {
+    events.push({
+      type: 'castle',
+      tier: 'minor',
+      label: 'CASTLED!',
+      sub: 'Your king is safe!',
+      champId: 'pawn',
     });
   }
 

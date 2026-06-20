@@ -139,7 +139,7 @@ export default function PlayPage() {
     if (events.length === 0) return;
 
     // Track the best tactic event for the recap's shining-moment panel.
-    const tierScore: Record<string, number> = { checkmate: 4, fork: 3, 'discovered-attack': 3, pin: 3, skewer: 3, 'win-material': 2, capture: 1 };
+    const tierScore: Record<string, number> = { checkmate: 4, fork: 3, 'discovered-attack': 3, pin: 3, skewer: 3, 'win-material': 2, castle: 2, capture: 1 };
     for (const e of events) {
       const cur = bestEventRef.current;
       if (!cur || (tierScore[e.type] ?? 0) > (tierScore[cur.type] ?? 0)) bestEventRef.current = e;

@@ -87,29 +87,31 @@ export function TutorialBoard({
       );
       timers.current.push(
         setTimeout(() => {
-          setPos((prev) => {
-            const next = { ...prev };
-            const moving = prev[from];
-            if (moving) {
-              const destRank = parseInt(to[1]);
-              const isPromotion =
-                moving.type === 'p' && (destRank === 8 || destRank === 1);
-              next[to] = isPromotion ? { type: 'q', color: moving.color } : moving;
-              delete next[from];
-            }
-            return next;
-          });
+          // Apply the move through chess.js so special moves resolve correctly:
+          // castling moves the rook too, en passant clears the captured pawn,
+          // promotion makes a queen. Hand-moving from→to only would strand the
+          // rook on a castle. The tutorial plays one move, so the original `fen`
+          // is still the position to apply it to.
+          const chess = new Chess(fen);
+          let captured = false;
+          try {
+            const m = chess.move({ from, to, promotion: 'q' });
+            captured = !!m?.captured;
+          } catch {
+            // Fall back to a raw slide if the move is somehow illegal.
+          }
+          setPos(readFen(chess.fen()));
           setSliding(false);
           setSparkle(true);
           setDone(true);
-          playSound('capture');
-          vibrate(HAPTIC.capture);
+          playSound(captured ? 'capture' : 'move');
+          vibrate(captured ? HAPTIC.capture : HAPTIC.move);
           timers.current.push(setTimeout(() => setSparkle(false), 900));
           after?.();
         }, SLIDE_MS),
       );
     },
-    [from, to],
+    [fen, from, to],
   );
 
   // Reset whenever the position, mode, or replay token changes.

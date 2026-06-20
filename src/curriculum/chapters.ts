@@ -172,7 +172,7 @@ export const CHAPTERS: Chapter[] = [
     },
     starGoal: 3,
     xpGoal: 1200,
-    starEventTypes: ['win-material', 'fork'],
+    starEventTypes: ['castle', 'win-material', 'fork'],
     levelIds: [9, 10, 11, 12],
   },
 
