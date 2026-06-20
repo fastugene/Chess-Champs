@@ -240,9 +240,10 @@ function detectPin(
             firstEnemy = { val: PIECE_VALUE[sq.type] };
           } else {
             // Second enemy piece on the same ray — is it more valuable?
-            if (sq.type === 'k' || PIECE_VALUE[sq.type] > firstEnemy.val) {
+            // Pinned (front) piece must be a real piece (>= 3): pinning a pawn is
+            // geometric noise that over-fires in the opening and teaches nothing.
+            if (firstEnemy.val >= 3 && (sq.type === 'k' || PIECE_VALUE[sq.type] > firstEnemy.val)) {
               const pinned = firstEnemy.val;
-              const behind = sq.type === 'k' ? 'King' : `piece worth ${PIECE_VALUE[sq.type]}`;
               return pinned < PIECE_VALUE[sq.type] || sq.type === 'k'
                 ? `The ${sq.type === 'k' ? 'king' : 'bigger piece'} is behind!`
                 : null;
@@ -290,8 +291,10 @@ function detectSkewer(
           if (!firstEnemy) {
             firstEnemy = { val: PIECE_VALUE[sq.type] };
           } else {
-            // Front piece is more valuable than attacker (must flee) → skewer!
-            if (firstEnemy.val > attackerVal) {
+            // Front piece is more valuable than attacker (must flee) → skewer.
+            // Won (back) piece must be a real piece (>= 3): skewering to win a
+            // pawn is a hollow tactic — the payoff is nothing.
+            if (firstEnemy.val > attackerVal && PIECE_VALUE[sq.type] >= 3) {
               return `Piece worth ${PIECE_VALUE[sq.type]} is left behind!`;
             }
             break;
