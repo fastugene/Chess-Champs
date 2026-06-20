@@ -34,12 +34,14 @@ export interface BotConfig {
 }
 
 export const BANDS: Record<Band, BotConfig> = {
-  rookie: { engine: 'minimax',   depth: 2, window: 6, blunderRate: 0.16 },
-  novice: { engine: 'minimax',   depth: 3, window: 5, blunderRate: 0.12 },
-  easy:   { engine: 'minimax',   depth: 3, window: 4, blunderRate: 0.096 },
-  medium: { engine: 'minimax',   depth: 4, window: 3, blunderRate: 0.064 },
-  hard:   { engine: 'stockfish', depth: 4, window: 5, blunderRate: 0.10, elo: 1320 },
-  insane: { engine: 'stockfish', depth: 4, window: 2, blunderRate: 0.05, elo: 1320 },
+  rookie: { engine: 'minimax',   depth: 3, window: 4, blunderRate: 0.12 },
+  novice: { engine: 'minimax',   depth: 5, window: 3, blunderRate: 0.09 },
+  easy:   { engine: 'minimax',   depth: 5, window: 2, blunderRate: 0.06 },
+  medium: { engine: 'minimax',   depth: 8, window: 1, blunderRate: 0.03 },
+  // Stockfish bands stay capped at its floor Elo 1320; the tighter window +
+  // lower blunder make `hard` stronger than `medium` (was paradoxically weaker).
+  hard:   { engine: 'stockfish', depth: 4, window: 3, blunderRate: 0.05, elo: 1320 },
+  insane: { engine: 'stockfish', depth: 4, window: 2, blunderRate: 0.03, elo: 1320 },
 };
 
 export const BAND_ORDER: Band[] = ['rookie', 'novice', 'easy', 'medium', 'hard', 'insane'];

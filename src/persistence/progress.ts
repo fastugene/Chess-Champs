@@ -372,38 +372,50 @@ export async function resetProgress(): Promise<void> {
   }
 }
 
+/** Min games at the current band before calibration may move it. */
+const CALIB_MIN_GAMES = 3;
+/** Climb when recent win-rate at this band is at/above this (too easy). */
+const CALIB_CLIMB_RATE = 0.67;
+/** Drop when recent win-rate at this band is at/below this (too hard). */
+const CALIB_DROP_RATE = 0.34;
+
 /**
- * Record a game result and auto-calibrate the difficulty band.
+ * Record a game result and auto-calibrate the difficulty band toward the
+ * 55–65% win target.
  *
- * Streak-driven and tuned to a child's emotional experience:
- *  - loss  → drop one band immediately (responsive — never let frustration build)
- *  - win   → count it; only after 4 wins in a row, climb one band (earned)
- *  - draw  → no band change, but it breaks the win streak
+ * Win-rate driven over a BAND-LOCAL window (`recentResults` is cleared on every
+ * band change, so the rate always reflects the current band):
+ *  - rate ≥ 0.67 over ≥3 games → climb one band (he's stomping it)
+ *  - rate ≤ 0.34 over ≥3 games → drop one band (it's frustrating)
+ *  - otherwise hold — he's in the target band
  *
- * Always moves at most one band at a time, and respects the parent's
- * floor/ceiling. `recentResults` is kept for telemetry only.
+ * The 0.34–0.67 hysteresis brackets the 55–65% goal and prevents thrashing. A
+ * kid winning ~70% now climbs every ~3 games (the old 4-in-a-row rule stalled
+ * whenever a loss broke the streak). Always moves at most one band at a time and
+ * respects the parent's floor/ceiling. `consecutiveWins` is kept for telemetry.
  */
 export async function recordGameResult(result: GameResult): Promise<Progress> {
   const p = await loadProgress();
   const parent = await loadParentSettings();
 
   p.recentResults = [...p.recentResults, result].slice(-10);
+  p.consecutiveWins = result === 'win' ? p.consecutiveWins + 1 : 0;
 
   const idx = BAND_ORDER.indexOf(p.botBand);
   const floorIdx = BAND_ORDER.indexOf(parent.bandFloor);
   const ceilIdx = BAND_ORDER.indexOf(parent.bandCeiling);
 
-  if (result === 'loss') {
-    if (idx > floorIdx) p.botBand = BAND_ORDER[idx - 1];
-    p.consecutiveWins = 0;
-  } else if (result === 'win') {
-    p.consecutiveWins += 1;
-    if (p.consecutiveWins >= 4) {
-      if (idx < ceilIdx) p.botBand = BAND_ORDER[idx + 1];
-      p.consecutiveWins = 0;
+  const games = p.recentResults.length;
+  if (games >= CALIB_MIN_GAMES) {
+    const wins = p.recentResults.filter((r) => r === 'win').length;
+    const rate = wins / games;
+    if (rate >= CALIB_CLIMB_RATE && idx < ceilIdx) {
+      p.botBand = BAND_ORDER[idx + 1];
+      p.recentResults = []; // fresh read at the new band
+    } else if (rate <= CALIB_DROP_RATE && idx > floorIdx) {
+      p.botBand = BAND_ORDER[idx - 1];
+      p.recentResults = [];
     }
-  } else {
-    p.consecutiveWins = 0;
   }
 
   await saveProgress(p);

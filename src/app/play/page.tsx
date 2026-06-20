@@ -25,7 +25,7 @@ import {
   DEFAULT_PROGRESS,
   type Progress,
 } from '@/persistence/progress';
-import { BAND_ORDER } from '@/engine/difficulty';
+import { BAND_ORDER, type Band } from '@/engine/difficulty';
 import { getRank } from '@/progression/ranks';
 import { getHint } from '@/chess/hints';
 import { crossedPawnMorph, pawnFormIndex, type PawnForm, type GadgetId } from '@/progression/champs';
@@ -47,6 +47,8 @@ export default function PlayPage() {
   const [phase, setPhase] = useState<Phase>('lesson');
   const [progress, setProgress] = useState<Progress>(DEFAULT_PROGRESS);
   const [trainingWheels, setTrainingWheels] = useState(true);
+  const [bandFloor, setBandFloor] = useState<Band>('rookie');
+  const [bandCeiling, setBandCeiling] = useState<Band>('hard');
   const [infoOpen, setInfoOpen] = useState(false);
   const [hintsLeft, setHintsLeft] = useState(3);
   const [hint, setHint] = useState<string | null>(null);
@@ -93,12 +95,26 @@ export default function PlayPage() {
       // tutorial (primer); seen → straight to the lesson.
       setPhase(p.primersSeen.includes(ch.id) ? 'lesson' : 'chapter-intro');
     });
-    void loadParentSettings().then((s) => setTrainingWheels(s.trainingWheels));
+    void loadParentSettings().then((s) => {
+      setTrainingWheels(s.trainingWheels);
+      setBandFloor(s.bandFloor);
+      setBandCeiling(s.bandCeiling);
+    });
   }, []);
+
+  // Effective band = the level's curriculum floor or the auto-calibrated band,
+  // whichever is harder, clamped to the parent's floor/ceiling. So the level
+  // sets a minimum difficulty ("hardest opponent yet") while calibration can
+  // still push above it as the son improves.
+  const effectiveBand = (() => {
+    const i = (b: Band) => BAND_ORDER.indexOf(b);
+    const floored = Math.max(i(level.botBand), i(progress.botBand));
+    return BAND_ORDER[Math.min(Math.max(floored, i(bandFloor)), i(bandCeiling))];
+  })();
 
   // Training-wheels auto-retire: only warn until the bot climbs past `medium`.
   const RETIRE_IDX = BAND_ORDER.indexOf('medium');
-  const safetyOn = trainingWheels && BAND_ORDER.indexOf(progress.botBand) < RETIRE_IDX;
+  const safetyOn = trainingWheels && BAND_ORDER.indexOf(effectiveBand) < RETIRE_IDX;
 
   const begin = useCallback(() => {
     handledGameOver.current = false;
@@ -107,13 +123,13 @@ export default function PlayPage() {
     bestEventRef.current = null;
     pendingNameModal.current = false;
     gameStartPawnXp.current = progress.pawnXp ?? 0;
-    // Use the auto-calibrated band so difficulty adapts to the son's skill.
-    startGame({ playerColor: level.playerColor, band: progress.botBand, safety: safetyOn });
+    // Curriculum floor + auto-calibration on top (see effectiveBand above).
+    startGame({ playerColor: level.playerColor, band: effectiveBand, safety: safetyOn });
     setPhase('playing');
     setHintsLeft(3);
     setHint(null);
     setRecap(null);
-  }, [level, startGame, progress.botBand, progress.pawnXp, safetyOn]);
+  }, [level, startGame, effectiveBand, progress.pawnXp, safetyOn]);
 
   // Award a star whenever the player lands this chapter's tactic.
   useEffect(() => {
