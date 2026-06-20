@@ -36,11 +36,10 @@ export interface Progress {
    * driven by `consecutiveWins` (see recordGameResult).
    */
   recentResults: GameResult[];
-  /**
-   * Wins in a row at the current band. The bot climbs one band only after 4 in
-   * a row; any loss or draw resets it to 0.
-   */
+  /** Wins in a row at the current band (telemetry; climbing is win-rate based). */
   consecutiveWins: number;
+  /** Losses in a row at the current band — drops one band at 2 (see recordGameResult). */
+  consecutiveLosses: number;
   /** Current rank tier id (e.g. 'wood', 'stone', 'iron'). */
   rankTier: string;
   /** Division within the tier (3 = lowest, 1 = highest). */
@@ -67,6 +66,7 @@ export const DEFAULT_PROGRESS: Progress = {
   botBand: 'rookie',
   recentResults: [],
   consecutiveWins: 0,
+  consecutiveLosses: 0,
   rankTier: 'wood',
   rankDivision: 3,
   pawnXp: 0,
@@ -372,27 +372,26 @@ export async function resetProgress(): Promise<void> {
   }
 }
 
-/** Min games at the current band before calibration may move it. */
+/** Min games at the current band before calibration may climb. */
 const CALIB_MIN_GAMES = 3;
 /** Climb when recent win-rate at this band is at/above this (too easy). */
 const CALIB_CLIMB_RATE = 0.67;
-/** Drop when recent win-rate at this band is at/below this (too hard). */
-const CALIB_DROP_RATE = 0.34;
+/** Drop one band after this many losses in a row (too hard). */
+const CALIB_DROP_LOSSES = 2;
 
 /**
  * Record a game result and auto-calibrate the difficulty band toward the
- * 55–65% win target.
+ * 55–65% win target. Always moves at most ONE band at a time.
  *
- * Win-rate driven over a BAND-LOCAL window (`recentResults` is cleared on every
- * band change, so the rate always reflects the current band):
- *  - rate ≥ 0.67 over ≥3 games → climb one band (he's stomping it)
- *  - rate ≤ 0.34 over ≥3 games → drop one band (it's frustrating)
- *  - otherwise hold — he's in the target band
+ * Asymmetric, tuned to a kid's frustration tolerance:
+ *  - DROP: 2 losses in a row → down one band immediately (responsive — never
+ *    let frustration build). Drops one step, never resets to the bottom.
+ *  - CLIMB: win-rate ≥ 0.67 over ≥3 games at this band → up one band (earned).
  *
- * The 0.34–0.67 hysteresis brackets the 55–65% goal and prevents thrashing. A
- * kid winning ~70% now climbs every ~3 games (the old 4-in-a-row rule stalled
- * whenever a loss broke the streak). Always moves at most one band at a time and
- * respects the parent's floor/ceiling. `consecutiveWins` is kept for telemetry.
+ * `recentResults` is a BAND-LOCAL window: it's cleared on every band change so
+ * the climb rate always reflects the current band. A kid winning ~70% climbs
+ * every ~3 games (the old 4-in-a-row rule stalled whenever a loss broke the
+ * streak). Respects the parent's floor/ceiling. `consecutiveWins` is telemetry.
  */
 export async function recordGameResult(result: GameResult): Promise<Progress> {
   const p = await loadProgress();
@@ -400,20 +399,21 @@ export async function recordGameResult(result: GameResult): Promise<Progress> {
 
   p.recentResults = [...p.recentResults, result].slice(-10);
   p.consecutiveWins = result === 'win' ? p.consecutiveWins + 1 : 0;
+  p.consecutiveLosses = result === 'loss' ? p.consecutiveLosses + 1 : 0;
 
   const idx = BAND_ORDER.indexOf(p.botBand);
   const floorIdx = BAND_ORDER.indexOf(parent.bandFloor);
   const ceilIdx = BAND_ORDER.indexOf(parent.bandCeiling);
 
-  const games = p.recentResults.length;
-  if (games >= CALIB_MIN_GAMES) {
+  if (p.consecutiveLosses >= CALIB_DROP_LOSSES && idx > floorIdx) {
+    p.botBand = BAND_ORDER[idx - 1];
+    p.recentResults = []; // fresh read at the new band
+    p.consecutiveLosses = 0;
+  } else if (p.recentResults.length >= CALIB_MIN_GAMES) {
     const wins = p.recentResults.filter((r) => r === 'win').length;
-    const rate = wins / games;
+    const rate = wins / p.recentResults.length;
     if (rate >= CALIB_CLIMB_RATE && idx < ceilIdx) {
       p.botBand = BAND_ORDER[idx + 1];
-      p.recentResults = []; // fresh read at the new band
-    } else if (rate <= CALIB_DROP_RATE && idx > floorIdx) {
-      p.botBand = BAND_ORDER[idx - 1];
       p.recentResults = [];
     }
   }
