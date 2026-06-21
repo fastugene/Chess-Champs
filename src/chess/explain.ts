@@ -178,3 +178,16 @@ export function buildVerdict(best: Candidate, second: Candidate, chosenIsBest: b
   }
   return `Good pick! The grandmaster slightly prefers ${best.san} — ${reason}.`;
 }
+
+/**
+ * One-liner for an AUTO-played grandmaster move (the 4-in-5 moves the player
+ * doesn't choose). Names the move it plays and why it beats the runner-up, so
+ * the kid still learns from every move. Growth-framed, no centipawns.
+ */
+export function buildAutoNote(best: Candidate, second: Candidate): string {
+  const delta = scoreVal(best.move) - scoreVal(second.move);
+  if (delta < 0.3) {
+    return `👑 Grandmaster plays ${best.san} — either was equally strong here.`;
+  }
+  return `👑 Grandmaster plays ${best.san} — ${strongerReason(best, second)} (better than ${second.san}).`;
+}

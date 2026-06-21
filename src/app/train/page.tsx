@@ -4,24 +4,35 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Chess, type Color } from 'chess.js';
 import { stockfishEvaluatedMoves, type EvaluatedMove } from '@/engine/stockfishClient';
-import { analyzeCandidate, buildVerdict, rateCandidates, type Candidate, type StarRating } from '@/chess/explain';
+import { analyzeCandidate, buildAutoNote, buildVerdict, rateCandidates, type Candidate, type StarRating } from '@/chess/explain';
 import { TrainBoard, type BoardHighlight } from '@/components/train/TrainBoard';
 import { MoveChoiceCard } from '@/components/train/MoveChoiceCard';
 import { playSound, resumeAudio } from '@/audio/sfx';
 
 /** Copilot search depth — full strength, true grandmaster top-2. Tunable. */
-const TRAIN_DEPTH = 14;
-/** Opponent strength cap — well below the copilot so the player wins comfortably. */
-const TRAIN_OPPONENT_ELO = 1200;
+const TRAIN_COPILOT_DEPTH = 14;
+/**
+ * Opponent handicap. UCI_Elo has a hard floor of 1320 in this build, so a low
+ * elo alone does nothing — the real weakening levers are a SHALLOW search depth
+ * and a low Skill Level (Stockfish's native handicap). Tunable.
+ */
+const TRAIN_OPPONENT_DEPTH = 3;
+const TRAIN_OPPONENT_SKILL = 2;
+const TRAIN_OPPONENT_ELO = 1320;
+/** The player chooses between the top-2 only once every Nth move; the rest the
+ *  grandmaster auto-plays (with a 1-liner) so human blunders stay rare. */
+const DECISION_EVERY = 5;
 /** The two candidates' board-highlight colors (keyed to the cards). */
 const ACCENTS = ['#2f86ff', '#ffc21f'];
 
-type Phase = 'setup' | 'thinking' | 'choosing' | 'verdict' | 'opponent' | 'gameover' | 'error';
+type Phase = 'setup' | 'thinking' | 'choosing' | 'verdict' | 'auto' | 'opponent' | 'gameover' | 'error';
 
 export default function TrainPage() {
   const router = useRouter();
   const chessRef = useRef(new Chess());
   const aliveRef = useRef(true);
+  // Counts the player's own turns; a choice is offered every DECISION_EVERY-th.
+  const playerMoveCountRef = useRef(0);
 
   const [phase, setPhase] = useState<Phase>('setup');
   const [playerColor, setPlayerColor] = useState<Color>('w');
@@ -69,7 +80,7 @@ export default function TrainPage() {
   async function opponentTurn(color: Color) {
     setPhase('opponent');
     const moves = await stockfishEvaluatedMoves(chessRef.current.fen(), {
-      depth: TRAIN_DEPTH, multiPV: 1, elo: TRAIN_OPPONENT_ELO,
+      depth: TRAIN_OPPONENT_DEPTH, multiPV: 1, elo: TRAIN_OPPONENT_ELO, skill: TRAIN_OPPONENT_SKILL,
     });
     if (!aliveRef.current) return;
     if (moves.length === 0) { setPhase('error'); return; }
@@ -80,18 +91,20 @@ export default function TrainPage() {
     else void playerTurn(color);
   }
 
-  // The player's side: copilot Stockfish surfaces its top-2 to choose from.
+  // The player's side: copilot Stockfish surfaces its top-2. The player CHOOSES
+  // only every DECISION_EVERY-th move; on the others the grandmaster auto-plays
+  // its best move (with a 1-liner) so human blunders stay rare.
   async function playerTurn(color: Color) {
     setPhase('thinking');
     setAutoNote(null);
     const moves = await stockfishEvaluatedMoves(chessRef.current.fen(), {
-      depth: TRAIN_DEPTH, multiPV: 2,
+      depth: TRAIN_COPILOT_DEPTH, multiPV: 2,
     });
     if (!aliveRef.current) return;
     if (moves.length === 0) { setPhase('error'); return; }
 
     const fenBefore = chessRef.current.fen();
-    // Only one good/legal move — auto-play it, no choice.
+    // Only one good/legal move — auto-play it, no choice (doesn't burn a decision).
     if (moves.length < 2) {
       const only = analyzeCandidate(fenBefore, moves[0]);
       setAutoNote(`Only one move here — ${only.rationale.toLowerCase()}.`);
@@ -103,16 +116,31 @@ export default function TrainPage() {
 
     const cands = [analyzeCandidate(fenBefore, moves[0]), analyzeCandidate(fenBefore, moves[1])];
     setRanked(cands);
-    setOrder(Math.random() < 0.5 ? [0, 1] : [1, 0]); // shuffle so the player thinks
     setStars(null);
-    setChosenRank(null);
     setVerdict('');
-    setPhase('choosing');
+
+    const moveIdx = playerMoveCountRef.current;
+    playerMoveCountRef.current += 1;
+    const isDecision = moveIdx % DECISION_EVERY === 0;
+
+    if (isDecision) {
+      setOrder(Math.random() < 0.5 ? [0, 1] : [1, 0]); // shuffle so the player thinks
+      setChosenRank(null);
+      setPhase('choosing');
+    } else {
+      // Grandmaster auto-move: show both candidates (best first) revealed, explain, await Next.
+      setOrder([0, 1]);
+      setChosenRank(0);
+      setStars(rateCandidates(cands[0].move, cands[1].move));
+      setAutoNote(buildAutoNote(cands[0], cands[1]));
+      setPhase('auto');
+    }
   }
 
   const start = (color: Color) => {
     resumeAudio();
     chessRef.current = new Chess();
+    playerMoveCountRef.current = 0;
     setFen(chessRef.current.fen());
     setPlayerColor(color);
     setScore({ matched: 0, total: 0 });
@@ -143,9 +171,18 @@ export default function TrainPage() {
     else void opponentTurn(playerColor);
   };
 
-  // Board highlights for the two candidates (choosing/verdict only).
+  // Auto-played grandmaster move: apply the engine #1 and continue.
+  const playAuto = () => {
+    if (ranked.length < 1) return;
+    applyAndSync(ranked[0].move);
+    setAutoNote(null);
+    if (chessRef.current.isGameOver()) finish(playerColor);
+    else void opponentTurn(playerColor);
+  };
+
+  // Board highlights for the two candidates (choosing/verdict/auto).
   const highlights: BoardHighlight[] =
-    (phase === 'choosing' || phase === 'verdict') && ranked.length >= 2
+    (phase === 'choosing' || phase === 'verdict' || phase === 'auto') && ranked.length >= 2
       ? order.map((rankIdx, displayPos) => ({
           from: ranked[rankIdx].move.from,
           to: ranked[rankIdx].move.to,
@@ -194,9 +231,9 @@ export default function TrainPage() {
 
           {phase === 'thinking' && <div className="train-status muted">🤔 The grandmaster is thinking…</div>}
           {phase === 'opponent' && <div className="train-status muted">⏳ Opponent is moving…</div>}
-          {autoNote && <div className="train-status muted">{autoNote}</div>}
+          {phase !== 'auto' && autoNote && <div className="train-status muted">{autoNote}</div>}
 
-          {(phase === 'choosing' || phase === 'verdict') && ranked.length >= 2 && (
+          {(phase === 'choosing' || phase === 'verdict' || phase === 'auto') && ranked.length >= 2 && (
             <div className="train-choices">
               {order.map((rankIdx, displayPos) => (
                 <MoveChoiceCard
@@ -204,12 +241,12 @@ export default function TrainPage() {
                   candidate={ranked[rankIdx]}
                   accent={ACCENTS[displayPos]}
                   label={displayPos === 0 ? 'A' : 'B'}
-                  revealed={phase === 'verdict'}
+                  revealed={phase === 'verdict' || phase === 'auto'}
                   stars={rankIdx === 0 ? stars?.bestStars : stars?.secondStars}
                   isBest={rankIdx === 0}
-                  chosen={chosenRank === rankIdx}
+                  chosen={phase === 'auto' ? false : chosenRank === rankIdx}
                   onPick={() => pick(rankIdx)}
-                  disabled={phase === 'verdict'}
+                  disabled={phase === 'verdict' || phase === 'auto'}
                 />
               ))}
             </div>
@@ -219,6 +256,13 @@ export default function TrainPage() {
             <div className="train-verdict card">
               <p>{verdict}</p>
               <button className="btn btn-primary" onClick={playChosen}>Play it ▶</button>
+            </div>
+          )}
+
+          {phase === 'auto' && (
+            <div className="train-verdict card">
+              <p>{autoNote}</p>
+              <button className="btn btn-primary" onClick={playAuto}>Next ▶</button>
             </div>
           )}
         </>

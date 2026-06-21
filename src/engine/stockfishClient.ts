@@ -42,7 +42,7 @@ let pendingResolve: Resolve | null = null;
 let multipv: Record<number, EvaluatedMove> = {};
 
 /** Capabilities discovered during the `uci` handshake. */
-const caps = { elo: false, multipv: false };
+const caps = { elo: false, multipv: false, skill: false };
 
 function post(cmd: string): void {
   worker?.postMessage(cmd);
@@ -123,6 +123,7 @@ function init(): Promise<boolean> {
         if (line.startsWith('option name')) {
           if (line.includes('UCI_Elo')) caps.elo = true;
           if (line.includes('MultiPV')) caps.multipv = true;
+          if (line.includes('Skill Level')) caps.skill = true;
         } else if (line === 'uciok') {
           post('isready');
         } else if (line === 'readyok') {
@@ -157,7 +158,7 @@ function init(): Promise<boolean> {
  */
 export async function stockfishRankedMoves(
   fen: string,
-  opts: { depth: number; elo?: number; multiPV: number },
+  opts: { depth: number; elo?: number; multiPV: number; skill?: number },
 ): Promise<EvaluatedMove[]> {
   if (typeof window === 'undefined') return [];
 
@@ -183,6 +184,12 @@ export async function stockfishRankedMoves(
     } else if (caps.elo) {
       post('setoption name UCI_LimitStrength value false');
     }
+    // Skill Level is the real handicap lever below the UCI_Elo 1320 floor.
+    // Always set it explicitly so a prior weak call never leaks into a later
+    // full-strength one: passed skill weakens; absent skill resets to max (20).
+    if (caps.skill) {
+      post(`setoption name Skill Level value ${opts.skill != null ? opts.skill : 20}`);
+    }
     post(`setoption name MultiPV value ${mpv}`);
     post(`position fen ${fen}`);
     post(`go depth ${opts.depth}`);
@@ -204,7 +211,7 @@ export async function stockfishRankedMoves(
  */
 export async function stockfishEvaluatedMoves(
   fen: string,
-  opts: { depth: number; multiPV: number; elo?: number },
+  opts: { depth: number; multiPV: number; elo?: number; skill?: number },
 ): Promise<EvaluatedMove[]> {
   return stockfishRankedMoves(fen, opts);
 }
