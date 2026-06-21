@@ -21,14 +21,25 @@ export interface StockfishMove {
   promotion?: 'q' | 'r' | 'b' | 'n';
 }
 
-type Resolve = (moves: StockfishMove[]) => void;
+/**
+ * A ranked move WITH its evaluation, for Grandmaster Training Mode. Scores are
+ * Stockfish's side-to-move-relative values: `scoreCp` in centipawns (higher =
+ * better for the side to move), or `mate` = mate-in-N (positive = we mate,
+ * negative = we get mated). Exactly one of the two is set per move.
+ */
+export interface EvaluatedMove extends StockfishMove {
+  scoreCp?: number;
+  mate?: number;
+}
+
+type Resolve = (moves: EvaluatedMove[]) => void;
 
 let worker: Worker | null = null;
 let initPromise: Promise<boolean> | null = null;
 let pendingResolve: Resolve | null = null;
 
 /** Top moves of the current search, keyed by MultiPV index (1 = best). */
-let multipv: Record<number, StockfishMove> = {};
+let multipv: Record<number, EvaluatedMove> = {};
 
 /** Capabilities discovered during the `uci` handshake. */
 const caps = { elo: false, multipv: false };
@@ -37,7 +48,7 @@ function post(cmd: string): void {
   worker?.postMessage(cmd);
 }
 
-function parseMove(uci: string | undefined): StockfishMove | null {
+function parseMove(uci: string | undefined): EvaluatedMove | null {
   if (!uci || uci === '(none)') return null;
   return {
     from: uci.slice(0, 2),
@@ -50,12 +61,19 @@ function handleLine(line: string): void {
   if (!line || !pendingResolve) return;
 
   if (line.startsWith('info ')) {
-    // e.g. "info depth 4 ... multipv 2 ... pv e2e4 e7e5 ..."
+    // e.g. "info depth 4 ... multipv 2 score cp 31 ... pv e2e4 e7e5 ..."
     const mpv = line.match(/ multipv (\d+)/);
     const pv = line.match(/ pv (\S+)/);
     if (mpv && pv) {
       const mv = parseMove(pv[1]);
-      if (mv) multipv[parseInt(mpv[1], 10)] = mv;
+      if (mv) {
+        // Capture the eval from the same info line (side-to-move relative).
+        const cp = line.match(/ score cp (-?\d+)/);
+        const mate = line.match(/ score mate (-?\d+)/);
+        if (mate) mv.mate = parseInt(mate[1], 10);
+        else if (cp) mv.scoreCp = parseInt(cp[1], 10);
+        multipv[parseInt(mpv[1], 10)] = mv;
+      }
     }
     return;
   }
@@ -132,11 +150,15 @@ function init(): Promise<boolean> {
 /**
  * Ask Stockfish for its top moves in the given position, ranked best-first.
  * Returns [] if Stockfish is unavailable (caller falls back to minimax).
+ *
+ * The eval fields on each move are populated but unused by the campaign caller;
+ * Grandmaster Training Mode uses `stockfishEvaluatedMoves` (a thin alias) and
+ * reads them.
  */
 export async function stockfishRankedMoves(
   fen: string,
   opts: { depth: number; elo?: number; multiPV: number },
-): Promise<StockfishMove[]> {
+): Promise<EvaluatedMove[]> {
   if (typeof window === 'undefined') return [];
 
   const ok = await init();
@@ -151,7 +173,7 @@ export async function stockfishRankedMoves(
 
   const mpv = caps.multipv ? Math.max(1, opts.multiPV) : 1;
 
-  return new Promise<StockfishMove[]>((resolve) => {
+  return new Promise<EvaluatedMove[]>((resolve) => {
     pendingResolve = resolve;
     post('stop');
     post('ucinewgame');
@@ -165,4 +187,24 @@ export async function stockfishRankedMoves(
     post(`position fen ${fen}`);
     post(`go depth ${opts.depth}`);
   });
+}
+
+/**
+ * Grandmaster Training Mode: top-N moves WITH evals, ranked best-first.
+ *
+ * Same singleton worker / one-search-at-a-time path as the campaign. Strength is
+ * per-call: omit `elo` for the FULL-strength copilot (true grandmaster top-2 +
+ * honest eval), or pass `elo` for the deliberately-weaker opponent. The
+ * per-call UCI_LimitStrength toggle resets cleanly between searches, so
+ * alternating copilot/opponent turns never leave the engine stuck weak.
+ *
+ * Returns [] if Stockfish is unavailable — this mode REQUIRES eval, so the
+ * caller must surface a friendly error rather than fall back to the minimax bot
+ * (which has no scored MultiPV).
+ */
+export async function stockfishEvaluatedMoves(
+  fen: string,
+  opts: { depth: number; multiPV: number; elo?: number },
+): Promise<EvaluatedMove[]> {
+  return stockfishRankedMoves(fen, opts);
 }

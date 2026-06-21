@@ -1867,3 +1867,99 @@ body {
   opacity: 0;
   animation: intro-fade-up .5s ease 2.2s both;
 }
+
+/* ── Grandmaster Training Mode (/train) ──────────────────────────────── */
+.train-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px 0 24px;
+}
+.train-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.train-title {
+  flex: 1;
+  text-align: center;
+  font-size: 19px;
+  margin: 0;
+  color: var(--gold);
+}
+.train-back { padding: 8px 12px; font-size: 14px; }
+.train-score {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.train-setup { text-align: center; }
+.train-setup-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.train-setup-btns .btn { flex: 1; }
+.train-status {
+  text-align: center;
+  font-size: 15px;
+  min-height: 22px;
+}
+.train-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.move-choice-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: linear-gradient(180deg, var(--panel) 0%, var(--bg-2) 100%);
+  border: 2px solid var(--panel-2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--text);
+  cursor: pointer;
+  transition: transform .08s ease, box-shadow .15s ease;
+}
+.move-choice-card:not(:disabled):active { transform: scale(0.98); }
+.move-choice-card:disabled { cursor: default; }
+.move-choice-card.is-best { box-shadow: 0 0 0 2px var(--gold), 0 6px 18px rgba(255, 201, 60, 0.25); }
+.move-choice-card.is-chosen:not(.is-best) { opacity: 0.85; }
+.move-choice-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.move-choice-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  font-weight: 800;
+  color: #0f1226;
+  font-size: 15px;
+}
+.move-choice-san {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.move-choice-stars { margin-left: auto; font-size: 16px; }
+.move-choice-rationale {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.move-choice-badge {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold);
+}
+.move-choice-badge.subtle { color: var(--muted); font-weight: 600; }
+.train-verdict { text-align: center; }
+.train-verdict p { margin: 4px 0 12px; font-size: 16px; line-height: 1.45; }

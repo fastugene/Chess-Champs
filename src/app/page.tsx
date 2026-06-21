@@ -122,6 +122,14 @@ export default function Home() {
         ▶ PLAY
       </button>
 
+      <button
+        className="btn btn-ghost"
+        style={{ maxWidth: 320, fontSize: 16 }}
+        onClick={() => { resumeAudio(); unlockSpeech(); router.push('/train'); }}
+      >
+        🎓 Grandmaster Mode
+      </button>
+
       <div style={{ display: 'flex', gap: 10, maxWidth: 320, width: '100%' }}>
         <button
           className="btn btn-ghost"
