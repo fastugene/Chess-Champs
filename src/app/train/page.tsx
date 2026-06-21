@@ -194,7 +194,7 @@ export default function TrainPage() {
     <div className="train-page">
       <header className="train-header">
         <button className="btn btn-ghost train-back" onClick={() => router.push('/')}>← Home</button>
-        <h1 className="train-title">🎓 Grandmaster Mode</h1>
+        <h1 className="train-title">🎓 Grandmaster Coach Mode</h1>
         {phase !== 'setup' && (
           <div className="train-score">Matched: {score.matched}/{score.total}</div>
         )}
@@ -202,7 +202,7 @@ export default function TrainPage() {
 
       {phase === 'setup' && (
         <div className="train-setup card">
-          <h2>Train with a Grandmaster</h2>
+          <h2>Grandmaster Coach Mode</h2>
           <p className="muted">
             A grandmaster shows you its <b>two best moves</b> each turn. You pick one — then
             find out which was stronger and why. Beat a weaker opponent and learn like a pro!

@@ -127,7 +127,7 @@ export default function Home() {
         style={{ maxWidth: 320, fontSize: 16 }}
         onClick={() => { resumeAudio(); unlockSpeech(); router.push('/train'); }}
       >
-        🎓 Grandmaster Mode
+        🎓 Grandmaster Coach Mode
       </button>
 
       <div style={{ display: 'flex', gap: 10, maxWidth: 320, width: '100%' }}>
